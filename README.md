@@ -14,7 +14,7 @@ This package includes the code for a discord bot which interacts with the ai hor
 The bot has the following features:
 
 - /generate command with all options the api supports at the time of creating this file
-- /login, /logout and /updatetoken for users to add and manage their account which they can create at https://aihorde.net/register
+- /login, /logout and /updatetoken for users to add and manage their account which they can create at https://api.aipowergrid.io/register
 - /userinfo (Userinfo context command) which shows your ai horde user information and the user information of anybody else who is logged in
 - /terms which shows how the bot currently handles the api token and further information
 - /models which shows all currently available models
@@ -26,7 +26,7 @@ The bot has the following features:
 - /party to start a generation party with a given style
 - "Remix" to edit another discord users avatar 
 - "Caption" to caption anozher discord users avatar
-- advanced configuration file which lets you change how the bot behaves and what actions the user can use (for limits refer to https://aihorde.net/api)
+- advanced configuration file which lets you change how the bot behaves and what actions the user can use (for limits refer to https://api.aipowergrid.io/api)
 - logging prompts, user id and generation id to track generation of malicious, nsfw or illegal content
 - and even more...
 
@@ -67,6 +67,17 @@ Now if everything is set up it should start and give an output in the console.
 When changing your encryption key after deployment the tokens won't be decrypted properly.  
 Avoid changing the encryption key after initial setup.
 Disabling encryption at any point will make commands for users who saved their tokens in an encrypted form not work any more.
+
+## Model Reference Constraints
+
+The bot now supports enforcing model-specific constraints based on the specifications from the [AIPowerGrid/image-model-reference](https://github.com/AIPowerGrid/image-model-reference) repository. This ensures that image generation requests comply with the appropriate parameters for each model, such as:
+
+- Minimum and maximum steps
+- Recommended cfg_scale
+- Compatible samplers
+- Compatible schedulers
+
+This feature automatically applies these constraints when a user selects a specific model for image generation, ensuring optimal results with each model. The source for model reference data can be configured in the `config.json` file under the `data_sources.model_reference_source` property.
 
 ## How to update
 

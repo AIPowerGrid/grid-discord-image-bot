@@ -457,5 +457,6 @@ export interface Config {
         curated_loras_source?: string
         styles_source?: string
         style_categories_source?: string,
+        model_reference_source?: string
     }
 }

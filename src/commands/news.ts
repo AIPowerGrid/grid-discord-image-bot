@@ -5,7 +5,7 @@ import { CommandContext } from "../classes/commandContext";
 const command_data = new SlashCommandBuilder()
     .setName("news")
     .setDMPermission(false)
-    .setDescription(`Shows ours news of ai horde`)
+    .setDescription(`Shows ours news of ai grid`)
 
 export default class extends Command {
     constructor() {
@@ -25,7 +25,7 @@ export default class extends Command {
             color: Colors.Red
         }).toJSON())
         ctx.interaction.reply({
-            content: `AI Horde News (3/${news.length})`,
+            content: `AI Grid News (3/${news.length})`,
             embeds,
             ephemeral: true
         })

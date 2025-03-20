@@ -1,0 +1,96 @@
+{
+  "advanced_generate": {
+    "enabled": true,
+    "user_restrictions": {
+      "allow_negative_prompt": true,
+      "allow_sampler": true,
+      "allow_style": true,
+      "allow_nsfw": false,
+      "allow_seed": true,
+      "allow_seed_variation": true,
+      "allow_ti": true,
+      "allow_cfg": true,
+      "allow_resolution": true,
+      "allow_gfpgan": true,
+      "allow_real_esrgan": true,
+      "allow_tiling": true,
+      "allow_amount": true,
+      "allow_karras": true,
+      "allow_sharing": true,
+      "allow_lora": true,
+      "allow_source_image": true,
+      "allow_keep_original_ratio": true,
+      "allow_model": true,
+      "allow_hires_fix": true
+    },
+    "default": {
+      "steps": 30,
+      "cfg": 7.5,
+      "sampler": "k_dpmpp_2m",
+      "resolution": {
+        "height": 512,
+        "width": 512
+      },
+      "tiling": false,
+      "gfpgan": false,
+      "real_esrgan": false,
+      "share": false,
+      "denoise": 75,
+      "keep_original_ratio": true,
+      "karras": true,
+      "hires_fix": false,
+      "model": "Deliberate"
+    },
+    "workers": [],
+    "censor_nsfw": true,
+    "trusted_workers": true,
+    "replacement_filter": true
+  },
+  "generate": {
+    "enabled": true,
+    "user_restrictions": {
+      "allow_negative_prompt": true,
+      "allow_style": true,
+      "allow_nsfw": false,
+      "allow_source_image": true,
+      "allow_amount": true,
+      "allow_tiling": true,
+      "allow_sharing": true,
+      "allow_keep_original_ratio": true
+    },
+    "default": {
+      "steps": 30,
+      "cfg": 7.5,
+      "style": "raw",
+      "tiling": false,
+      "share": false,
+      "denoise": 75,
+      "keep_original_ratio": true
+    },
+    "workers": [],
+    "censor_nsfw": true,
+    "trusted_workers": true,
+    "replacement_filter": true
+  },
+  "data_sources": {
+    "curated_loras_source": "https://raw.githubusercontent.com/Haidra-Org/AI-Horde-image-model-reference/main/lora.json",
+    "styles_source": "https://raw.githubusercontent.com/ZeldaFan0225/AI_Horde_Discord/main/styles.json",
+    "style_categories_source": "https://raw.githubusercontent.com/ZeldaFan0225/AI_Horde_Discord/main/style_categories.json",
+    "model_reference_source": "https://raw.githubusercontent.com/AIPowerGrid/image-model-reference/main/stable_diffusion.json"
+  },
+  "advanced": {
+    "encrypt_token": false,
+    "use_postgres": true,
+    "dev": false
+  },
+  "logs": {
+    "enabled": true,
+    "plain": true,
+    "csv": true,
+    "log_actions": {
+      "with_source_image": true,
+      "without_source_image": true
+    },
+    "directory": "/logs"
+  }
+}

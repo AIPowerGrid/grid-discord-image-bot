@@ -13,7 +13,7 @@ const config = JSON.parse(readFileSync("./config.json").toString()) as Config
 const command_data = new SlashCommandBuilder()
     .setName("generate")
     .setDMPermission(false)
-    .setDescription(`Generates an image with ai horde`)
+    .setDescription(`Generates an image with AIPG Grid`)
     if(config.generate?.enabled) {
         command_data.addStringOption(
             new SlashCommandStringOption()
@@ -210,21 +210,47 @@ export default class extends Command {
         }
 
 
+        // Create initial generation parameters
+        let generationParams = {
+            sampler_name: style.sampler_name as typeof ModelGenerationInputStableSamplers[keyof typeof ModelGenerationInputStableSamplers],
+            height: height,
+            width: width,
+            n: amount,
+            tiling,
+            denoising_strength: denoise,
+            cfg_scale: style.cfg_scale,
+            loras: style.loras,
+            steps: style.steps,
+            tis: style.tis,
+            hires_fix: style.hires_fix
+        };
+        
+        // Apply model reference constraints if a model is specified in the style
+        if (style.model) {
+            try {
+                // Log that we're applying model reference constraints
+                if (ctx.client.config.advanced?.dev) {
+                    console.log(`Applying model reference constraints for model: ${style.model}`);
+                }
+                
+                // Apply the constraints from the model reference
+                generationParams = await ctx.client.applyModelReferenceConstraints(style.model, generationParams);
+                
+                // Log the updated parameters after applying constraints
+                if (ctx.client.config.advanced?.dev) {
+                    console.log('Updated parameters after applying model reference constraints:', generationParams);
+                }
+            } catch (error) {
+                // Log any errors but continue with original parameters
+                if (ctx.client.config.advanced?.dev) {
+                    console.error('Error applying model reference constraints:', error);
+                }
+            }
+        }
+        
         const generation_data: ImageGenerationInput = {
             prompt,
-            params: {
-                sampler_name: style.sampler_name as typeof ModelGenerationInputStableSamplers[keyof typeof ModelGenerationInputStableSamplers],
-                height: height,
-                width: width,
-                n: amount,
-                tiling,
-                denoising_strength: denoise,
-                cfg_scale: style.cfg_scale,
-                loras: style.loras,
-                steps: style.steps,
-                tis: style.tis,
-                hires_fix: style.hires_fix
-            },
+            params: generationParams,
             replacement_filter: ctx.client.config.generate.replacement_filter,
             nsfw: ctx.client.config.generate?.user_restrictions?.allow_nsfw,
             censor_nsfw: ctx.client.config.generate?.censor_nsfw,
@@ -279,7 +305,7 @@ export default class extends Command {
             color: Colors.Blue,
             title: "Generation started",
             description: `Position: \`${start_status?.queue_position}\`/\`${start_horde_data.queued_requests}\`
-Kudos consumed: \`${start_status?.kudos}\`
+Tokens consumed: \`${start_status?.kudos}\`
 Workers: \`${start_horde_data.worker_count}\`
 
 \`${start_status?.waiting}\`/\`${amount}\` Images waiting
@@ -293,7 +319,7 @@ ETA: <t:${Math.floor(Date.now()/1000)+(start_status?.wait_time ?? 0)}:R>`
         const login_embed = new EmbedBuilder({
             color: Colors.Red,
             title: "You are not logged in",
-            description: `This will make your requests appear anonymous.\nThis can result in low generation speed due to low priority.\nLog in now with ${await ctx.client.getSlashCommandTag("login")}\n\nDon't know what the token is?\nCreate an ai horde account here: https://aihorde.net/register`
+            description: `This will make your requests appear anonymous.\nThis can result in low generation speed due to low priority.\nLog in now with ${await ctx.client.getSlashCommandTag("login")}\n\nDon't know what the token is?\nCreate an ai horde account here: https://api.aipowergrid.io/register`
         })
 
         if(ctx.client.config.advanced?.dev) embed.setFooter({text: generation_start.id})
@@ -359,7 +385,7 @@ ETA: <t:${Math.floor(Date.now()/1000)+(start_status?.wait_time ?? 0)}:R>`
                 color: Colors.Blue,
                 title: "Generation started",
                 description: `Position: \`${status.queue_position}\`/\`${horde_data.queued_requests}\`
-Kudos consumed: \`${status?.kudos}\`
+Tokens consumed: \`${status?.kudos}\`
 Workers: \`${horde_data.worker_count}\`
 
 \`${status.waiting}\`/\`${amount}\` Images waiting
@@ -377,8 +403,8 @@ ETA: <t:${Math.floor(Date.now()/1000)+(status?.wait_time ?? 0)}:R>`
             if((status?.wait_time ?? 0) > 60 * 2) {
                 embeds.push(new EmbedBuilder({
                     color: Colors.Yellow,
-                    title: "AI Horde currently is under high load",
-                    description: "You can contribute your GPUs processing power to the project.\nRead more: https://aihorde.net/"
+                    title: "AI Grid currently is under high load",
+                    description: "You can contribute your GPUs processing power to the project.\nRead more: https://aipowergrid.io/"
                 }).toJSON())
             }
 
@@ -426,7 +452,7 @@ ETA: <t:${Math.floor(Date.now()/1000)+(status?.wait_time ?? 0)}:R>`
                     const embeds = [
                         new EmbedBuilder({
                             title: "Generation Finished",
-                            description: `**Prompt** ${ctx.interaction.options.getString("prompt", true)}\n**Style** \`${style?.name ?? style_raw}\`${style?.type === "category-style" ? ` from category \`${style_raw}\`` : ""}\n**Kudos Consumed** \`${images.kudos}\`${image_map.length !== amount ? "\nCensored Images are not displayed" : ""}`,
+                            description: `**Prompt** ${ctx.interaction.options.getString("prompt", true)}\n**Style** \`${style?.name ?? style_raw}\`${style?.type === "category-style" ? ` from category \`${style_raw}\`` : ""}\n**Tokens Consumed** \`${images.kudos}\`${image_map.length !== amount ? "\nCensored Images are not displayed" : ""}`,
                             color: Colors.Blue,
                             footer: {text: `Generation ID ${generation_start!.id}`},
                             thumbnail: img_data && image_map.length < 10 ? {url: "attachment://original.webp"} : img_data ? {url: img!.url} : undefined
@@ -451,7 +477,7 @@ ETA: <t:${Math.floor(Date.now()/1000)+(status?.wait_time ?? 0)}:R>`
                         title: `Image ${i+1}`,
                         image: {url: `attachment://${g.seed ?? `image${i}`}.webp`},
                         color: Colors.Blue,
-                        description: `${!i ? `**Raw Prompt:** ${ctx.interaction.options.getString("prompt", true)}\n**Processed Prompt:** ${prompt}\n**Style:** \`${style?.name ?? style_raw}\`${style?.type === "category-style" ? ` from category \`${style_raw}\`` : ""}\n**Total Kudos Cost:** \`${images.kudos}\`` : ""}${ctx.client.config.advanced?.dev ? `\n\n**Image ID** ${g.id}` : ""}` || undefined,
+                        description: `${!i ? `**Raw Prompt:** ${ctx.interaction.options.getString("prompt", true)}\n**Processed Prompt:** ${prompt}\n**Style:** \`${style?.name ?? style_raw}\`${style?.type === "category-style" ? ` from category \`${style_raw}\`` : ""}\n**Total Tokens Cost:** \`${images.kudos}\`` : ""}${ctx.client.config.advanced?.dev ? `\n\n**Image ID** ${g.id}` : ""}` || undefined,
                     })
                     if(img_data) embed.setThumbnail(`attachment://original.webp`)
                     return {attachment, embed}
@@ -484,11 +510,11 @@ ETA: <t:${Math.floor(Date.now()/1000)+(status?.wait_time ?? 0)}:R>`
             if(!target_token) return message.reply({content: "You need to be logged in to receive rewards for this party"})
             const target_suser = await ctx.ai_horde_manager.findUser({token: target_token})
             if(!target_suser?.username || target_suser.id === 0) return message.reply({content: "Your saved token is invalid, please renew it to claim rewards"})
-            if(!creator_token) return message.reply({content: "The creator of the party is logged out...\nLooks like you won't get any kudos"})
+            if(!creator_token) return message.reply({content: "The creator of the party is logged out...\nLooks like you won't get any tokens"})
             const transfer = await ctx.ai_horde_manager.postKudosTransfer({username: target_suser.username, amount: p.award}, {token: creator_token}).catch(console.error)
             if(!transfer?.transferred) return message.reply({content: "Unable to send you the reward"})
 
-            await message.reply({allowedMentions: {parse: []}, content: `<@${ctx.interaction.user.id}>, the creator of the party <@${p.creator_id}> awarded you ${p.award} kudos for your ${p.recurring ? "" : "first "}generation.${p.recurring ? "\nIf you submit another generation you can claim the reward again" : "\nYou can not receive the reward again"}`})
+            await message.reply({allowedMentions: {parse: []}, content: `<@${ctx.interaction.user.id}>, the creator of the party <@${p.creator_id}> awarded you ${p.award} tokens for your ${p.recurring ? "" : "first "}generation.${p.recurring ? "\nIf you submit another generation you can claim the reward again" : "\nYou can not receive the reward again"}`})
             const update = await ctx.database?.query("UPDATE parties SET users=array_append(array_remove(users, $2), $2) WHERE channel_id=$1 RETURNING *", [ctx.interaction.channelId, ctx.interaction.user.id])
             if(update?.rowCount) ctx.client.cache.set(`party-${ctx.interaction.channelId}`, update.rows[0]!)
             return;

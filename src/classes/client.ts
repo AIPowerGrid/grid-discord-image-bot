@@ -7,6 +7,7 @@ import {existsSync, mkdirSync, writeFileSync} from "fs"
 import { Pool } from "pg";
 import crypto from "crypto"
 import { AIHorde, SharedKeyDetails } from "@zeldafan0225/ai_horde";
+import { ModelReferenceManager } from "./modelReference";
 
 export class AIHordeClient extends Client {
 	commands: Store<StoreTypes.COMMANDS>;
@@ -21,6 +22,7 @@ export class AIHordeClient extends Client {
 	horde_styles: Record<string, HordeStyleData>
 	horde_style_categories: Record<string, string[]>
 	horde_curated_loras: Array<number>
+	modelReferenceManager: ModelReferenceManager
 
 	constructor(options: ClientOptions) {
 		super(options);
@@ -43,6 +45,7 @@ export class AIHordeClient extends Client {
 		this.horde_styles = {}
 		this.horde_style_categories = {}
 		this.horde_curated_loras = []
+		this.modelReferenceManager = new ModelReferenceManager(this)
 	}
 
 	getNeededPermissions(guild_id: string) {
@@ -99,6 +102,13 @@ export class AIHordeClient extends Client {
 		if(!req.status?.toString().startsWith("2")) throw new Error("Unable to fetch curated LORAs");
 		const res = await req.json()
 		this.horde_curated_loras = res
+	}
+
+	/**
+	 * Apply model reference constraints to generation parameters
+	 */
+	async applyModelReferenceConstraints(modelName: string, generationParams: any): Promise<any> {
+		return this.modelReferenceManager.applyModelReferenceConstraints(modelName, generationParams);
 	}
 
 	getHordeStyle(input: string, search_order: ("style" | "category")[] = ["style", "category"]): HordeStyleData & {name: string, type: "style" | "category-style"} | null {

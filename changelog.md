@@ -1,5 +1,10 @@
 # Changelog
 
+## V3.4.0
+- Add support for model-specific constraints using the AIPowerGrid image-model-reference repository
+- Automatically apply model-specific parameters such as steps, cfg_scale, samplers, and schedulers during image generation
+- Add configurable model reference source in data_sources configuration
+
 ## V3.3.0
 - add support for upscaling and similar interrogation forms
 - add support for adding roles when somebody logs in via the bot

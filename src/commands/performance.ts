@@ -25,7 +25,7 @@ export default class extends Command {
         })
         const embed = new EmbedBuilder({
             color: Colors.Blue,
-            title: "AI Horde Performance",
+            title: "AIPG Grid Performance",
             description: `Queued Requests \`${performance.queued_requests}\`
 Queued Interrogation Requests \`${performance.queued_forms}\`
 Queued Megapixelsteps \`${performance.queued_megapixelsteps}\`

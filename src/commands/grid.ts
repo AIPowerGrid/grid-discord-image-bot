@@ -3,26 +3,27 @@ import { Command } from "../classes/command";
 import { CommandContext } from "../classes/commandContext";
 
 const command_data = new SlashCommandBuilder()
-    .setName("about")
+    .setName("grid")
     .setDMPermission(false)
-    .setDescription(`Shows information about this bot`)
+    .setDescription(`Shows information on AIPG Grid`)
 
 export default class extends Command {
     constructor() {
         super({
-            name: "about",
+            name: "grid",
             command_data: command_data.toJSON(),
             staff_only: false,
         })
     }
 
     override async run(ctx: CommandContext): Promise<any> {
-        //const counts = await ctx.database?.query("SELECT (SELECT COUNT(*) FROM user_tokens) as user_tokens, (SELECT COUNT(*) FROM parties) as parties, (SELECT COUNT(*) FROM pending_kudos) as pending_kudos").then(res => res.rows[0]).catch(console.error)
-
+        //const news = await ctx.ai_horde_manager.getNews()
+        //const article = news[0]
         const embed = new EmbedBuilder({
             color: Colors.Blue,
-            title: "Unofficial AI Grid Discord Bot",
-            description: `This Discord Bot was made by Zelda_Fan#0225 and adapted by mrschmiklz to the Grid`
+            title: "AI GRID",
+            //TODO: Add more info in the future
+            description: `Proof of Useful Work (POUW) is a paradigm shift in the world of blockchain and cryptocurrency, designed to address the sustainability concerns of traditional Proof of Work (PoW) systems.`
         })
         return ctx.interaction.reply({
             embeds: [embed],

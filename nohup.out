@@ -1,0 +1,21 @@
+
+> zeldafan_discord_bot@3.3.0 deploy
+> node cleanup.js && npm i && npx tsc -p . && node .
+
+
+up to date, audited 49 packages in 992ms
+
+4 low severity vulnerabilities
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+Loaded 19 classes
+Loaded 7 classes
+Loaded 5 classes
+Loaded 3 classes
+Ready

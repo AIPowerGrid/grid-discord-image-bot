@@ -14,7 +14,7 @@ const config = JSON.parse(readFileSync("./config.json").toString()) as Config
 const command_data = new SlashCommandBuilder()
     .setName("advanced_generate")
     .setDMPermission(false)
-    .setDescription(`Generates an image with ai horde`)
+    .setDescription(`Generates an image with AIPG Grid`)
     if(config.advanced_generate?.enabled) {
         command_data.addStringOption(
             new SlashCommandStringOption()
@@ -370,25 +370,50 @@ export default class extends Command {
         if(gfpgan) post_processing.push(ModelGenerationInputPostProcessingTypes.GFPGAN)
         if(real_esrgan) post_processing.push(ModelGenerationInputPostProcessingTypes.RealESRGAN_x4plus)
 
+        let generationParams = {
+            sampler_name: sampler,
+            cfg_scale: cfg,
+            seed: seed ?? undefined,
+            height,
+            width,
+            seed_variation: seed_variation ?? undefined,
+            post_processing,
+            tiling,
+            steps,
+            n: amount,
+            denoising_strength: denoise,
+            karras,
+            loras: lora_id ? [{name: lora_id}] : undefined,
+            tis,
+            hires_fix
+        };
+        
+        // Apply model reference constraints if a model is specified
+        if (model && model !== "YOLO") {
+            try {
+                // Log that we're applying model reference constraints
+                if (ctx.client.config.advanced?.dev) {
+                    console.log(`Applying model reference constraints for model: ${model}`);
+                }
+                
+                // Apply the constraints from the model reference
+                generationParams = await ctx.client.applyModelReferenceConstraints(model, generationParams);
+                
+                // Log the updated parameters after applying constraints
+                if (ctx.client.config.advanced?.dev) {
+                    console.log('Updated parameters after applying model reference constraints:', generationParams);
+                }
+            } catch (error) {
+                // Log any errors but continue with original parameters
+                if (ctx.client.config.advanced?.dev) {
+                    console.error('Error applying model reference constraints:', error);
+                }
+            }
+        }
+        
         const generation_data: ImageGenerationInput = {
             prompt,
-            params: {
-                sampler_name: sampler,
-                cfg_scale: cfg,
-                seed: seed ?? undefined,
-                height,
-                width,
-                seed_variation: seed_variation ?? undefined,
-                post_processing,
-                tiling,
-                steps,
-                n: amount,
-                denoising_strength: denoise,
-                karras,
-                loras: lora_id ? [{name: lora_id}] : undefined,
-                tis,
-                hires_fix
-            },
+            params: generationParams,
             replacement_filter: ctx.client.config.advanced_generate.replacement_filter,
             nsfw: ctx.client.config.advanced_generate?.user_restrictions?.allow_nsfw,
             censor_nsfw: ctx.client.config.advanced_generate?.censor_nsfw,
@@ -458,7 +483,7 @@ ETA: <t:${Math.floor(Date.now()/1000)+(start_status?.wait_time ?? 0)}:R>`
         const login_embed = new EmbedBuilder({
             color: Colors.Red,
             title: "You are not logged in",
-            description: `This will make your requests appear anonymous.\nThis can result in low generation speed due to low priority.\nLog in now with ${await ctx.client.getSlashCommandTag("login")}\n\nDon't know what the token is?\nCreate an ai horde account here: https://aihorde.net/register`
+            description: `This will make your requests appear anonymous.\nThis can result in low generation speed due to low priority.\nLog in now with ${await ctx.client.getSlashCommandTag("login")}\n\nDon't know what the token is?\nCreate an ai horde account here: https://api.aipowergrid.io/register`
         })
 
         if(ctx.client.config.advanced?.dev) embed.setFooter({text: generation_start.id})
@@ -524,7 +549,7 @@ ETA: <t:${Math.floor(Date.now()/1000)+(start_status?.wait_time ?? 0)}:R>`
                 color: Colors.Blue,
                 title: "Generation started",
                 description: `Position: \`${status.queue_position}\`/\`${horde_data.queued_requests}\`
-Kudos consumed: \`${status?.kudos}\`
+Tokens consumed: \`${status?.kudos}\`
 Workers: \`${horde_data.worker_count}\`
 
 \`${status.waiting}\`/\`${amount}\` Images waiting
@@ -543,7 +568,7 @@ ETA: <t:${Math.floor(Date.now()/1000)+(status?.wait_time ?? 0)}:R>`
                 embeds.push(new EmbedBuilder({
                     color: Colors.Yellow,
                     title: "AI Horde currently is under high load",
-                    description: "You can contribute your GPUs processing power to the project.\nRead more: https://aihorde.net/"
+                    description: "You can contribute your GPUs processing power to the project.\nRead more: https://https://aipowergrid.io/"
                 }).toJSON())
             }
 
@@ -590,7 +615,7 @@ ETA: <t:${Math.floor(Date.now()/1000)+(status?.wait_time ?? 0)}:R>`
                     const embeds = [
                         new EmbedBuilder({
                             title: "Generation Finished",
-                            description: `**Prompt** ${prompt}\n**Style** ${style_raw}\n**Kudos Consumed** \`${images.kudos}\`${image_map.length !== amount ? "\nCensored Images are not displayed" : ""}`,
+                            description: `**Prompt** ${prompt}\n**Style** ${style_raw}\n**Tokens Consumed** \`${images.kudos}\`${image_map.length !== amount ? "\nCensored Images are not displayed" : ""}`,
                             color: Colors.Blue,
                             footer: {text: `Generation ID ${generation_start!.id}`},
                             thumbnail: img_data && image_map.length < 10 ? {url: "attachment://original.webp"} : img_data ? {url: img!.url} : undefined
@@ -645,7 +670,7 @@ ETA: <t:${Math.floor(Date.now()/1000)+(status?.wait_time ?? 0)}:R>`
             }
             case "width":
             case "height": {
-                const steps = Array.from({length: 3072/64}).map((_, i) => ({name: `${(i+1)*64}px${(i+1)*64 > 1024 ? " (Requires Kudos upfront)" : ""}`, value: (i+1)*64})).filter(v => v.value >= (context.client.config.advanced_generate?.user_restrictions?.height?.min ?? 64) && v.value <= (context.client.config.advanced_generate?.user_restrictions?.height?.max ?? 3072))
+                const steps = Array.from({length: 3072/64}).map((_, i) => ({name: `${(i+1)*64}px${(i+1)*64 > 1024 ? " (Requires Tokens upfront)" : ""}`, value: (i+1)*64})).filter(v => v.value >= (context.client.config.advanced_generate?.user_restrictions?.height?.min ?? 64) && v.value <= (context.client.config.advanced_generate?.user_restrictions?.height?.max ?? 3072))
                 const inp = context.interaction.options.getFocused(true)
                 return await context.interaction.respond(steps.filter((v) => !inp.value || v.name.includes(inp.value)).slice(0,25))
             }

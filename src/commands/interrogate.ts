@@ -10,7 +10,7 @@ const config = JSON.parse(readFileSync("./config.json").toString()) as Config
 const command_data = new SlashCommandBuilder()
     .setName("interrogate")
     .setDMPermission(false)
-    .setDescription(`Interrogates an image with ai horde`)
+    .setDescription(`Interrogates an image with AIPG Grid`)
     if(config.interrogate?.enabled) {
         command_data.addAttachmentOption(
             new SlashCommandAttachmentOption()

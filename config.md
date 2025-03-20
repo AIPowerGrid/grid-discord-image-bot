@@ -224,11 +224,12 @@ Here you can see an explanation of what which option does
         "curated_loras_source": The default source where to fetch the curated list of loras with (STRING) *12,
         "styles_source": The default source where to fetch the styles from (STRING) *10,
         "style_categories_source": The default source where to fetch the style categories from (STRING) *11,
+        "model_reference_source": The default source where to fetch the model reference constraints from (STRING) *13,
     }
 }
 ```
 
-`*1` See API Documentation for reference (https://aihorde.net/api)  
+`*1` See API Documentation for reference (https://api.aipowergrid.io/api)  
 `*2` Available Samplers: k_lms, k_heun, k_euler, k_euler_a, k_dpm_2, k_dpm_2_a, DDIM, PLMS, k_dpm_fast, k_dpm_adaptive, k_dpmpp_2s_a, k_dpmpp_2m, dpmsolver  
 `*3` Not all models are available at all times *1  
 `*4` Developer mode will enable logging and will also show the generations ID in the embed in Discord  
@@ -239,4 +240,5 @@ Here you can see an explanation of what which option does
 `*9` Uses an encryption key only known to you to encrypt the users tokens. This is recommended to increase security. Enabling this option may have an impact on speed.  
 `*10` Must follow the scheme of https://github.com/Haidra-Org/Stable-Horde-Styles/blob/main/styles.json  
 `*11` Must follow the scheme of https://github.com/Haidra-Org/Stable-Horde-Styles/blob/main/categories.json  
-`*12` Must follow the scheme of https://github.com/Haidra-Org/AI-Horde-image-model-reference/blob/main/lora.json
+`*12` Must follow the scheme of https://github.com/Haidra-Org/AI-Horde-image-model-reference/blob/main/lora.json  
+`*13` Must follow the scheme of https://github.com/AIPowerGrid/image-model-reference/blob/main/stable_diffusion.json

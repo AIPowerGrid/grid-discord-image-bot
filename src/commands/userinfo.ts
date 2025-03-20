@@ -6,7 +6,7 @@ import { UserDetails } from "@zeldafan0225/ai_horde";
 const command_data = new SlashCommandBuilder()
     .setName("userinfo")
     .setDMPermission(false)
-    .setDescription(`Shows information on your ai horde account`)
+    .setDescription(`Shows information on your ai grid account`)
     .addUserOption(
         new SlashCommandUserOption()
         .setName("discord_user")
@@ -15,7 +15,7 @@ const command_data = new SlashCommandBuilder()
     )
     .addIntegerOption(
         new SlashCommandIntegerOption()
-        .setName("horde_user_id")
+        .setName("grid_user_id")
         .setDescription("The ID of the horde user to view")
         .setRequired(false)
     )
@@ -63,7 +63,7 @@ export default class extends Command {
             let token = await ctx.client.getUserToken(user, ctx.database)
             if(!token && ctx.interaction.options.getUser("user")?.id) return ctx.error({error: "The user has not added their token"})
             if(!token) return ctx.interaction.editReply({
-                content: `Please add your token before your user details can be shown.\nThis is needed to perform actions on your behalf\n\nBy entering your token you agree to the ${await ctx.client.getSlashCommandTag("terms")}\n**You agree to not upload or generate any illegal content**${!ctx.client.config.advanced?.encrypt_token ? "\n\n**The bot is configured not to save your token in an encrypted form!**" : ""}\n\n\nDon't know what the token is?\nCreate an ai horde account here: https://aihorde.net/register`,
+                content: `Please add your token before your user details can be shown.\nThis is needed to perform actions on your behalf\n\nBy entering your token you agree to the ${await ctx.client.getSlashCommandTag("terms")}\n**You agree to not upload or generate any illegal content**${!ctx.client.config.advanced?.encrypt_token ? "\n\n**The bot is configured not to save your token in an encrypted form!**" : ""}\n\n\nDon't know what the token is?\nCreate an ai horde account here: https://api.aipowergrid.io/register`,
                 components: [{type: 1, components: [add_token_button.toJSON()]}]
             })
     
