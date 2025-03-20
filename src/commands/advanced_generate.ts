@@ -1,4 +1,4 @@
-import { ActionRowData, AttachmentBuilder, ButtonBuilder, ChannelType, Colors, EmbedBuilder, InteractionButtonComponentData, SlashCommandAttachmentOption, SlashCommandBooleanOption, SlashCommandBuilder, SlashCommandIntegerOption, SlashCommandStringOption } from "discord.js";
+import { AttachmentBuilder, ButtonBuilder, ChannelType, Colors, EmbedBuilder, InteractionButtonComponentData, SlashCommandAttachmentOption, SlashCommandBooleanOption, SlashCommandBuilder, SlashCommandIntegerOption, SlashCommandStringOption } from "discord.js";
 import { Command } from "../classes/command";
 import { CommandContext } from "../classes/commandContext";
 import { Config } from "../types";
@@ -225,7 +225,7 @@ const command_data = new SlashCommandBuilder()
 function generateButtons(id: string) {
     let i = 0
     const getId = () => `followuprate_${i+1}_${id}`
-    const components: ActionRowData<InteractionButtonComponentData>[] = []
+    const components: Array<{ type: number; components: Array<any> }> = []
     while(i < 10) {
         const btn = {
             type: 2,
@@ -234,6 +234,7 @@ function generateButtons(id: string) {
             style: 1
         }
         if(!components[Math.floor(i/5)]?.components) components.push({type: 1, components: []})
+        // Non-null assertion is safe here because we just checked and added if needed
         components[Math.floor(i/5)]!.components.push(btn)
         ++i
     }
@@ -623,7 +624,7 @@ ETA: <t:${Math.floor(Date.now()/1000)+(status?.wait_time ?? 0)}:R>`
                     ]
 
                     if(ctx.client.config.advanced_generate?.user_restrictions?.allow_rating && (generation_data.shared ?? true) && files.length === 1) {
-                        components = [...generateButtons(generation_start!.id!), ...components]
+                        components = [...generateButtons(generation_start!.id!), ...components] as { type: number; components: Array<any> }[]
                     }
                     await message.edit({content: null, components, embeds, files});
                     return null
@@ -651,7 +652,7 @@ ETA: <t:${Math.floor(Date.now()/1000)+(status?.wait_time ?? 0)}:R>`
                 if(img_data) files.push(new AttachmentBuilder(img_data, {name: "original.webp"}))
                 let components = [{type: 1, components: [delete_btn]}]
                 if(ctx.client.config.advanced_generate?.user_restrictions?.allow_rating && (generation_data.shared ?? true) && files.length === 1) {
-                    components = [...generateButtons(generation_start!.id!), ...components]
+                    components = [...generateButtons(generation_start!.id!), ...components] as { type: number; components: Array<any> }[]
                 }
                 await message.edit({content: `Image generation finished\n\n**A new view is available, check it out by enabling \`result_structure_v2_enabled\` in the bots config**`, components, embeds, files}).catch(console.error);
                 return null
