@@ -21,6 +21,11 @@ export interface ModelReference {
         cfg_scale: number;
         samplers: string[];
         schedulers: string[];
+        // Added dimensions support
+        width?: number;
+        height?: number;
+        // Aspect ratio options
+        aspect_ratios?: string[];
     };
 }
 
@@ -183,6 +188,69 @@ export class ModelReferenceManager {
             // For now, assume 'karras' in the model reference means to set karras=true
             if (modelRef.requirements.schedulers.includes('karras')) {
                 updatedParams.karras = true;
+            }
+        }
+        
+        // Apply width constraint if specified
+        if (modelRef.requirements.width !== undefined) {
+            updatedParams.width = modelRef.requirements.width;
+        }
+        
+        // Apply height constraint if specified
+        if (modelRef.requirements.height !== undefined) {
+            updatedParams.height = modelRef.requirements.height;
+        }
+        
+        // Apply aspect ratio if specified and no explicit dimensions were provided
+        if (modelRef.requirements.aspect_ratios && modelRef.requirements.aspect_ratios.length > 0 && 
+            (!updatedParams.width || !updatedParams.height)) {
+            
+            // Get the first aspect ratio in the list
+            const aspectRatioStr = modelRef.requirements.aspect_ratios[0];
+            if (!aspectRatioStr) return updatedParams;
+            
+            try {
+                // Parse the aspect ratio (expected format: "width:height" e.g. "16:9")
+                const parts = aspectRatioStr.split(':');
+                if (parts.length !== 2) return updatedParams;
+                
+                const widthRatio = Number(parts[0]);
+                const heightRatio = Number(parts[1]);
+                
+                if (!isNaN(widthRatio) && !isNaN(heightRatio) && widthRatio > 0 && heightRatio > 0) {
+                    // If no dimensions provided, use the aspect ratio with a standard size
+                    if (!updatedParams.width && !updatedParams.height) {
+                        if (widthRatio >= heightRatio) {
+                            // Landscape or square
+                            updatedParams.width = 512;
+                            updatedParams.height = Math.round(512 * (heightRatio / widthRatio));
+                        } else {
+                            // Portrait
+                            updatedParams.height = 512;
+                            updatedParams.width = Math.round(512 * (widthRatio / heightRatio));
+                        }
+                    } else if (updatedParams.width && !updatedParams.height) {
+                        // Width provided, calculate height
+                        updatedParams.height = Math.round(updatedParams.width * (heightRatio / widthRatio));
+                    } else if (!updatedParams.width && updatedParams.height) {
+                        // Height provided, calculate width
+                        updatedParams.width = Math.round(updatedParams.height * (widthRatio / heightRatio));
+                    }
+                    
+                    // Ensure dimensions are multiples of 8 (common requirement for stable diffusion)
+                    if (updatedParams.width) {
+                        updatedParams.width = Math.ceil(updatedParams.width / 8) * 8;
+                    }
+                    if (updatedParams.height) {
+                        updatedParams.height = Math.ceil(updatedParams.height / 8) * 8;
+                    }
+                    
+                    if (this.client.config.advanced?.dev) {
+                        console.log(`Applied aspect ratio ${aspectRatioStr} for model ${modelName}: ${updatedParams.width}x${updatedParams.height}`);
+                    }
+                }
+            } catch (error) {
+                console.error(`Failed to parse aspect ratio ${aspectRatioStr} for model ${modelName}:`, error);
             }
         }
         
