@@ -1,4 +1,4 @@
-import {AIHorde} from "@zeldafa n0225/ai_horde";
+import {AIHorde} from "aipg_horde";
 import { Colors, MessageReaction, PartialMessageReaction, PartialUser, User } from "discord.js";
 import { Pool } from "pg";
 import { AIHordeClient } from "../classes/client";
