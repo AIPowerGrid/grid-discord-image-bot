@@ -7,7 +7,7 @@ import { AutocompleteContext } from "../classes/autocompleteContext";
 import Centra from "centra";
 const {buffer2webpbuffer} = require("webp-converter")
 import { appendFileSync } from "fs"
-import { ImageGenerationInput, ModelGenerationInputStableSamplers, ModelGenerationInputPostProcessingTypes } from "@zeldafan0225/ai_horde";
+import { ImageGenerationInput, ModelGenerationInputStableSamplers, ModelGenerationInputPostProcessingTypes } from "aipg_horde";
 
 const config = JSON.parse(readFileSync("./config.json").toString()) as Config
 

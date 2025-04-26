@@ -2,7 +2,7 @@ import Centra from "centra";
 import { Modal } from "../classes/modal";
 import { ModalContext } from "../classes/modalContext";
 import { appendFileSync } from "fs";
-import {SourceImageProcessingTypes, ImageGenerationInput, ModelGenerationInputStableSamplers} from "@zeldafan0225/ai_horde";
+import {SourceImageProcessingTypes, ImageGenerationInput, ModelGenerationInputStableSamplers} from "aipg_horde";
 import { EmbedBuilder } from "@discordjs/builders";
 import { AttachmentBuilder, ButtonBuilder, Colors } from "discord.js";
 

@@ -1,4 +1,4 @@
-import {ModelGenerationInputStableSamplers, AIHorde, ModelPayloadTextInversionsStable} from "@zeldafan0225/ai_horde";
+import {ModelGenerationInputStableSamplers, AIHorde, ModelPayloadTextInversionsStable} from "aipg_horde";
 import {
     AnySelectMenuInteraction,
     AutocompleteInteraction,

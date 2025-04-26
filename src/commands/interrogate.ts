@@ -3,7 +3,7 @@ import { Command } from "../classes/command";
 import { CommandContext } from "../classes/commandContext";
 import { Config } from "../types";
 import {readFileSync} from "fs"
-import {ModelInterrogationInputStable, ModelInterrogationFormTypes, HordeAsyncRequestStates} from "@zeldafan0225/ai_horde";
+import {ModelInterrogationInputStable, ModelInterrogationFormTypes, HordeAsyncRequestStates} from "aipg_horde";
 
 const config = JSON.parse(readFileSync("./config.json").toString()) as Config
 

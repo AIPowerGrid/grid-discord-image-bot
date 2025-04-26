@@ -1,7 +1,7 @@
 import { ButtonBuilder, Colors, EmbedBuilder, SlashCommandBooleanOption, SlashCommandBuilder, SlashCommandIntegerOption, SlashCommandUserOption } from "discord.js";
 import { Command } from "../classes/command";
 import { CommandContext } from "../classes/commandContext";
-import { UserDetails } from "@zeldafan0225/ai_horde";
+import { UserDetails } from "aipg_horde";
 
 const command_data = new SlashCommandBuilder()
     .setName("userinfo")

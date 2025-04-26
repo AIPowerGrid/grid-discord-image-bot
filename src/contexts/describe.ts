@@ -1,4 +1,4 @@
-import {ModelInterrogationInputStable, ModelInterrogationFormTypes, HordeAsyncRequestStates} from "@zeldafan0225/ai_horde";
+import {ModelInterrogationInputStable, ModelInterrogationFormTypes, HordeAsyncRequestStates} from "aipg_horde";
 import { ApplicationCommandType, ButtonBuilder, Colors, ComponentType, ContextMenuCommandBuilder, EmbedBuilder } from "discord.js";
 import { Context } from "../classes/context";
 import { ContextContext } from "../classes/contextContext";

@@ -4,7 +4,7 @@ import { CommandContext } from "../classes/commandContext";
 import { AutocompleteContext } from "../classes/autocompleteContext";
 import { readFileSync, appendFileSync } from "fs";
 import { Config } from "../types";
-import {ModelGenerationInputStableSamplers, ImageGenerationInput} from "@zeldafan0225/ai_horde";
+import {ModelGenerationInputStableSamplers, ImageGenerationInput} from "aipg_horde";
 import Centra from "centra";
 const {buffer2webpbuffer} = require("webp-converter")
 

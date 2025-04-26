@@ -6,7 +6,7 @@ import { Config, HordeStyleData, LORAData, LORAFetchResponse, Party, StoreTypes 
 import {existsSync, mkdirSync, writeFileSync} from "fs"
 import { Pool } from "pg";
 import crypto from "crypto"
-import { AIHorde, SharedKeyDetails } from "@zeldafan0225/ai_horde";
+import { AIHorde, SharedKeyDetails } from "aipg_horde";
 import { ModelReferenceManager } from "./modelReference";
 
 export class AIHordeClient extends Client {

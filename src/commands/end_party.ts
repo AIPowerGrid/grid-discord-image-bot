@@ -1,7 +1,7 @@
 import { SlashCommandBuilder } from "discord.js";
 import { Command } from "../classes/command";
 import { CommandContext } from "../classes/commandContext";
-import { SharedKeyDetails } from "@zeldafan0225/ai_horde";
+import { SharedKeyDetails } from "aipg_horde";
 
 const command_data = new SlashCommandBuilder()
     .setName("end_party")
