@@ -196,7 +196,7 @@
           "denoise": 50
       },
       "source_image": {
-          "require_login": true,
+          "require_login": false,
           "require_ai_horde_account_oauth_connection": false,
           "allow_non_webp": true,
           "require_nsfw_channel": false,
@@ -207,22 +207,9 @@
           }
       },
       "user_restrictions": {
-          "amount": {
-              "max": 4
-          },
-          "denoise": {
-              "min": 0,
-              "max": 100
-          },
           "allow_negative_prompt": true,
           "allow_style": true,
-          "allow_tiling": true,
-          "allow_amount": true,
-          "allow_nsfw": false,
-          "allow_sharing": true,
-          "allow_rating": true,
-          "allow_source_image": true,
-          "allow_denoise": true
+          "allow_source_image": true
       }
   },
   "remix": {

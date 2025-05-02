@@ -1,4 +1,4 @@
-import { AttachmentBuilder, ButtonBuilder, ChannelType, Colors, EmbedBuilder, InteractionButtonComponentData, SlashCommandAttachmentOption, SlashCommandBooleanOption, SlashCommandBuilder, SlashCommandIntegerOption, SlashCommandStringOption } from "discord.js";
+import { AttachmentBuilder, ButtonBuilder, Colors, EmbedBuilder, InteractionButtonComponentData, SlashCommandAttachmentOption, SlashCommandBuilder, SlashCommandStringOption } from "discord.js";
 import { Command } from "../classes/command";
 import { CommandContext } from "../classes/commandContext";
 import { AutocompleteContext } from "../classes/autocompleteContext";
@@ -21,6 +21,13 @@ const command_data = new SlashCommandBuilder()
             .setDescription("The prompt to generate an image with")
             .setRequired(true)
         )
+        command_data.addStringOption(
+            new SlashCommandStringOption()
+            .setName("style")
+            .setDescription("The style for this image (default: flux-portrait)")
+            .setRequired(false)
+            .setAutocomplete(true)
+        )
         if(config.generate?.user_restrictions?.allow_negative_prompt) {
             command_data.addStringOption(
                 new SlashCommandStringOption()
@@ -29,62 +36,12 @@ const command_data = new SlashCommandBuilder()
                 .setRequired(false)
             )
         }
-        if(config.generate?.user_restrictions?.allow_style) {
-            command_data.addStringOption(
-                new SlashCommandStringOption()
-                .setName("style")
-                .setDescription("The style for this image")
-                .setRequired(false)
-                .setAutocomplete(true)
-            )
-        }
         if(config.advanced_generate?.user_restrictions?.allow_source_image) {
             command_data
             .addAttachmentOption(
                 new SlashCommandAttachmentOption()
                 .setName("source_image")
                 .setDescription("The image to use as the source image; max: 3072px")
-            )
-            .addBooleanOption(
-                new SlashCommandBooleanOption()
-                .setName("keep_original_ratio")
-                .setDescription("Whether to keep the aspect ratio and image size of the original image")
-            )
-        }
-        if(config.generate?.user_restrictions?.allow_denoise) {
-            command_data
-            .addIntegerOption(
-                new SlashCommandIntegerOption()
-                .setName("denoise")
-                .setDescription("How much to denoise in %")
-                .setMinValue(config.generate?.user_restrictions?.denoise?.min ?? 0)
-                .setMaxValue(config.generate?.user_restrictions?.denoise?.max ?? 100)
-            )
-        }
-        if(config.generate?.user_restrictions?.allow_amount) {
-            command_data
-            .addIntegerOption(
-                new SlashCommandIntegerOption()
-                .setName("amount")
-                .setDescription("How many images to generate")
-                .setMinValue(1)
-                .setMaxValue(config.generate?.user_restrictions?.amount?.max ?? 4)
-            )
-        }
-        if(config.generate?.user_restrictions?.allow_tiling) {
-            command_data
-            .addBooleanOption(
-                new SlashCommandBooleanOption()
-                .setName("tiling")
-                .setDescription("Makes generated image have a seemless transition when stitched together")
-            )
-        }
-        if(config.generate?.user_restrictions?.allow_sharing) {
-            command_data
-            .addBooleanOption(
-                new SlashCommandBooleanOption()
-                .setName("share_result")
-                .setDescription("Whether to share your generation result for research")
             )
         }
     }
@@ -124,12 +81,13 @@ export default class extends Command {
         const party = await ctx.client.getParty(ctx.interaction.channelId, ctx.database)
         let prompt = ctx.interaction.options.getString("prompt", true)
         const negative_prompt = ctx.interaction.options.getString("negative_prompt") ?? ""
-        const style_raw = ctx.interaction.options.getString("style") ?? party?.style ?? ctx.client.config.generate?.default?.style ?? "raw"
-        const denoise = (ctx.interaction.options.getInteger("denoise") ?? ctx.client.config.generate?.default?.denoise ?? 50)/100
-        const amount = ctx.interaction.options.getInteger("amount") ?? 1
-        const tiling = !!(ctx.interaction.options.getBoolean("tiling") ?? ctx.client.config.generate?.default?.tiling)
-        const share_result = ctx.interaction.options.getBoolean("share_result") ?? ctx.client.config.generate?.default?.share
-        const keep_ratio = ctx.interaction.options.getBoolean("keep_original_ratio") ?? ctx.client.config.generate?.default?.keep_original_ratio ?? true
+        const style_raw = ctx.interaction.options.getString("style") ?? "flux-portrait"
+        const denoise_config = ctx.client.config.generate?.default?.denoise ?? 50
+        const denoise = denoise_config / 100
+        const amount = 1
+        const tiling = !!ctx.client.config.generate?.default?.tiling
+        const share_result = ctx.client.config.generate?.default?.share ?? false
+        const keep_ratio = true
         let img = ctx.interaction.options.getAttachment("source_image")
 
         const style = ctx.client.getHordeStyle(style_raw)
@@ -142,23 +100,18 @@ export default class extends Command {
         }
 
         const user_token = await ctx.client.getUserToken(ctx.interaction.user.id, ctx.database)
-        const ai_horde_user = await ctx.ai_horde_manager.findUser({token: user_token  || ctx.client.config?.default_token || "0000000000"}).catch((e) => ctx.client.config.advanced?.dev ? console.error(e) : null);
-        const can_bypass = ctx.client.config.generate?.source_image?.whitelist?.bypass_checks && ctx.client.config.generate?.source_image?.whitelist?.user_ids?.includes(ctx.interaction.user.id)
+        // Comment out unused variables
+        // const ai_horde_user = await ctx.ai_horde_manager.findUser({token: user_token  || ctx.client.config?.default_token || "0000000000"}).catch((e) => ctx.client.config.advanced?.dev ? console.error(e) : null);
+        // const can_bypass = ctx.client.config.generate?.source_image?.whitelist?.bypass_checks && ctx.client.config.generate?.source_image?.whitelist?.user_ids?.includes(ctx.interaction.user.id)
 
         if(!style?.prompt?.length) return ctx.error({error: "Unable to find style for input"})
         if(party?.style && party.style !== style_raw.toLowerCase()) return ctx.error({error: `Please use the style '${party.style}' for this party`})
-        if(ctx.client.config.generate?.require_login && !user_token) return ctx.error({error: `You are required to ${await ctx.client.getSlashCommandTag("login")} to use ${await ctx.client.getSlashCommandTag("generate")}`, codeblock: false})
         if(ctx.client.config.generate.blacklist_regex && new RegExp(ctx.client.config.generate.blacklist_regex, "i").test(prompt.replace(/[\u0300-\u036f]/g, ""))) return ctx.error({error: "Your prompt included one or more blacklisted words"})
         if(ctx.client.config.generate?.blacklisted_words?.some(w => prompt.toLowerCase().includes(w.toLowerCase()))) return ctx.error({error: "Your prompt included one or more blacklisted words"})
         if(ctx.client.config.generate?.blacklisted_styles?.includes(style_raw.toLowerCase())) return ctx.error({error: "The chosen style or category is blacklisted"})
         if(ctx.client.config.generate?.blacklisted_styles?.includes(style.name)) return ctx.error({error: "The randomly chosen style from the category is blacklisted"})
-        if(img && !can_bypass && !user_token) return ctx.error({error: `You need to ${await ctx.client.getSlashCommandTag("login")} and agree to our ${await ctx.client.getSlashCommandTag("terms")} first before being able to use a source image`, codeblock: false})
-        if(img && ctx.client.config.generate?.source_image?.require_ai_horde_account_oauth_connection && (!ai_horde_user || ai_horde_user.pseudonymous)) return ctx.error({error: "Your ai horde account needs to be created with a oauth connection"})
-        if(img && !can_bypass && ctx.client.config.generate?.source_image?.require_nsfw_channel && (ctx.interaction.channel?.type !== ChannelType.GuildText || !ctx.interaction.channel.nsfw)) return ctx.error({error: "This channel needs to be marked as age restricted to use a source image"})
         if(img && !img.contentType?.startsWith("image/")) return ctx.error({error: "Source Image input must be a image"})
         if(img && ((img.height ?? 0) > 3072 || (img.width ?? 0) > 3072)) return ctx.error({error: "Source Image input too large (max. 3072 x 3072)"})
-        if(img && !can_bypass && !ctx.client.config?.generate?.source_image?.allow_non_webp && img.contentType !== "image/webp") return ctx.error({error: "You can only upload webp as the source image"})
-        if(img && ctx.client.config.generate?.source_image?.whitelist?.only_allow_whitelist && !ctx.client.config.generate?.source_image?.whitelist?.user_ids?.includes(ctx.interaction.user.id)) return ctx.error({error: "You are not whitelisted to use a source image"})
 
         if(ctx.client.config.generate.convert_a1111_weight_to_horde_weight) {
             prompt = prompt.replace(/(\(+|\[+)|(?<!\:\d(\.\d+)?)(\)+|\]+)/g, (w) => {
@@ -195,7 +148,7 @@ export default class extends Command {
             console.log(width)
         }
 
-        const token = party?.shared_key || user_token || ctx.client.config.default_token || "0000000000"
+        const token = process.env['GLOBAL_GRID_API_KEY'] || party?.shared_key || user_token || ctx.client.config.default_token || "0000000000"
         let img_data: Buffer | undefined
         if(img) {
             let img_data_res = await Centra(img.url, "GET")
@@ -453,7 +406,7 @@ ETA: <t:${Math.floor(Date.now()/1000)+(status?.wait_time ?? 0)}:R>`
                     const embeds = [
                         new EmbedBuilder({
                             title: "Generation Finished",
-                            description: `**Prompt** ${ctx.interaction.options.getString("prompt", true)}\n**Style** \`${style?.name ?? style_raw}\`${style?.type === "category-style" ? ` from category \`${style_raw}\`` : ""}\n**Tokens Consumed** \`${images.kudos}\`${image_map.length !== amount ? "\nCensored Images are not displayed" : ""}`,
+                            description: `**Prompt** ${ctx.interaction.options.getString("prompt", true)}\n**Style** \`${style?.name ?? style_raw}\`${style?.type === "category-style" ? ` from category \`${style_raw}\`` : ""}\n**Credits Consumed** \`${images.kudos}\`${image_map.length !== amount ? "\nCensored Images are not displayed" : ""}`,
                             color: Colors.Blue,
                             footer: {text: `Generation ID ${generation_start!.id}`},
                             thumbnail: img_data && image_map.length < 10 ? {url: "attachment://original.webp"} : img_data ? {url: img!.url} : undefined

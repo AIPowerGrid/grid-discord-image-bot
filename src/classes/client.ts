@@ -142,12 +142,18 @@ export class AIHordeClient extends Client {
 	}
 	
     async getUserToken(user_id: string, database: Pool | undefined): Promise<string|undefined> {
+		// If global API key is set, use it as the primary token
+		if (process.env['GLOBAL_GRID_API_KEY']) {
+			return process.env['GLOBAL_GRID_API_KEY'];
+		}
+		
+		// Fall back to user token if no global key is available
 		if(!database) return undefined;
-        const rows = await database.query("SELECT * FROM user_tokens WHERE id=$1", [user_id])
-        if(!rows.rowCount || !rows.rows[0]) return undefined
+		const rows = await database.query("SELECT * FROM user_tokens WHERE id=$1", [user_id])
+		if(!rows.rowCount || !rows.rows[0]) return undefined
 		const token = this.config.advanced?.encrypt_token ? this.decryptString(rows.rows[0].token) : rows.rows[0].token
-        return token
-    }
+		return token
+	}
 
 	decryptString(hash: string){
 		if(!hash.includes(":")) return hash

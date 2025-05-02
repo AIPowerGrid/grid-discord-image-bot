@@ -23,7 +23,7 @@ let connection: Pool | undefined
 
 
 const client = new AIHordeClient({
-    intents: ["Guilds", "GuildMessageReactions"],
+    intents: ["Guilds", "GuildMessageReactions", "GuildMessages", "MessageContent"],
     partials: [Partials.Reaction, Partials.Message]
 })
 
@@ -126,3 +126,22 @@ client.on("interactionCreate", async (interaction) => {
         };
     }
 })
+
+client.on("messageCreate", async (message) => {
+    if (message.author.bot || message.content.startsWith("/") || message.content.startsWith("!")) return;
+    
+    if (!message.guild || !message.channel.isTextBased()) return;
+
+    await message.reply({
+        content: `💡 You can use \`/generate prompt:${message.content}\` to create an image. Would you like me to generate an image from your message?`,
+        components: [{
+            type: 1,
+            components: [{
+                type: 2,
+                style: 1,
+                custom_id: `quickgenerate_${message.content.substring(0, 80)}`,
+                label: "Generate this image"
+            }]
+        }]
+    });
+});
