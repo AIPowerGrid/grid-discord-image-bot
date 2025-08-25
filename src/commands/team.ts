@@ -30,7 +30,7 @@ export default class extends Command {
         const team = teams.find(t => t.id?.toLowerCase() === query?.toLowerCase() || t.name?.toLowerCase() === query?.toLowerCase())
         if(query && team) {
             const delete_btn = new ButtonBuilder({
-                label: "Delete this message",
+                label: "Delete",
                 custom_id: `delete_${ctx.interaction.user.id}`,
                 style: 4
             })

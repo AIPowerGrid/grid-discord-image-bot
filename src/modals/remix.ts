@@ -125,7 +125,22 @@ export default class extends Modal {
             const generation = result.generations?.[0]
             if(!generation?.id) return displayError();
             if(ctx.client.config.advanced?.dev) console.log(generation)
-            const req = await Centra(generation.img!, "get").send().then(res => res.body)
+            let req;
+            try {
+                req = await Centra(generation.img!, "get").timeout(30000).send().then(res => res.body);
+            } catch (centraError) {
+                console.error('Centra failed, trying fetch:', centraError);
+                try {
+                    const response = await fetch(generation.img!, { 
+                        signal: AbortSignal.timeout(30000) 
+                    });
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    req = Buffer.from(await response.arrayBuffer());
+                } catch (fetchError) {
+                    console.error('Fetch also failed:', fetchError);
+                    throw centraError;
+                }
+            }
             const attachment = new AttachmentBuilder(req, {name: `${generation.seed ?? `image${0}`}.webp`})
             const embed = new EmbedBuilder({
                 color: Colors.Blue,
@@ -136,7 +151,7 @@ export default class extends Modal {
             })
             embed.setThumbnail(`attachment://original.webp`)
             const delete_btn = new ButtonBuilder({
-                label: "Delete this message",
+                label: "Delete",
                 custom_id: `delete_${ctx.interaction.user.id}`,
                 style: 4
             })

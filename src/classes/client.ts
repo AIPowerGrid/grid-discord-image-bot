@@ -80,28 +80,80 @@ export class AIHordeClient extends Client {
 		}
 	}
 
-	async loadHordeStyles() {
-		const source = this.config.data_sources?.styles_source || `https://raw.githubusercontent.com/Haidra-Org/AI-Horde-Styles/main/styles.json`
-		const req = await fetch(source)
-		if(!req.status?.toString().startsWith("2")) throw new Error("Unable to fetch styles");
-		const res = await req.json()
-		this.horde_styles = res
+    async loadHordeStyles(channelId?: string) {
+		try {
+            // Per-channel override support
+            const overrideFile = channelId && this.config.channel_overrides?.[channelId]?.styles_file;
+            const stylesPath = overrideFile || "./styles.json";
+            // Use local styles.json file (or channel override)
+            const stylesData = readFileSync(stylesPath, "utf-8");
+			this.horde_styles = JSON.parse(stylesData);
+            if (this.config.advanced?.dev) console.log(`Loaded styles from local file ${stylesPath}`);
+		} catch (error) {
+			console.error("Error loading local styles.json file:", error);
+			// Fallback to remote source if local file fails
+			try {
+				const source = this.config.data_sources?.styles_source || `https://raw.githubusercontent.com/Haidra-Org/AI-Horde-Styles/main/styles.json`
+				const req = await fetch(source)
+				if (!req.status?.toString().startsWith("2")) throw new Error("Unable to fetch styles");
+				const res = await req.json()
+				this.horde_styles = res
+				console.log("Loaded styles from remote source as fallback");
+			} catch (fetchError) {
+				console.error("Failed to fetch remote styles:", fetchError);
+				throw new Error("Unable to load styles from local file or remote source");
+			}
+		}
 	}
 
-	async loadHordeStyleCategories() {
-		const source = this.config.data_sources?.style_categories_source || `https://raw.githubusercontent.com/Haidra-Org/AI-Horde-Styles/main/categories.json`
-		const req = await fetch(source)
-		if(!req.status?.toString().startsWith("2")) throw new Error("Unable to fetch style categories");
-		const res = await req.json()
-		this.horde_style_categories = res
+    async loadHordeStyleCategories(channelId?: string) {
+		try {
+            const overrideFile = channelId && this.config.channel_overrides?.[channelId]?.categories_file;
+            const categoriesPath = overrideFile || "./categories.json";
+            // Check if a local categories.json file exists (or channel override)
+            if (existsSync(categoriesPath)) {
+                const categoriesData = readFileSync(categoriesPath, "utf-8");
+				this.horde_style_categories = JSON.parse(categoriesData);
+                if (this.config.advanced?.dev) console.log(`Loaded style categories from local file ${categoriesPath}`);
+				return;
+			}
+			
+			// If local file doesn't exist, fetch from remote source
+			const source = this.config.data_sources?.style_categories_source || `https://raw.githubusercontent.com/Haidra-Org/AI-Horde-Styles/main/categories.json`
+			const req = await fetch(source)
+			if(!req.status?.toString().startsWith("2")) throw new Error("Unable to fetch style categories");
+			const res = await req.json()
+			this.horde_style_categories = res
+			if (this.config.advanced?.dev) console.log("Loaded style categories from remote source");
+		} catch (error) {
+			console.error("Error loading style categories:", error);
+			// Initialize with empty object if both methods fail
+			this.horde_style_categories = {};
+		}
 	}
 
 	async loadHordeCuratedLORAs() {
-		const source = this.config.data_sources?.curated_loras_source || `https://raw.githubusercontent.com/Haidra-Org/AI-Horde-image-model-reference/main/lora.json`
-		const req = await fetch(source)
-		if(!req.status?.toString().startsWith("2")) throw new Error("Unable to fetch curated LORAs");
-		const res = await req.json()
-		this.horde_curated_loras = res
+		try {
+			// Check if a local lora.json file exists
+			if (existsSync("./lora.json")) {
+				const loraData = readFileSync("./lora.json", "utf-8");
+				this.horde_curated_loras = JSON.parse(loraData);
+				if (this.config.advanced?.dev) console.log("Loaded curated LORAs from local lora.json file");
+				return;
+			}
+			
+			// If local file doesn't exist, fetch from remote source
+			const source = this.config.data_sources?.curated_loras_source || `https://raw.githubusercontent.com/Haidra-Org/AI-Horde-image-model-reference/main/lora.json`
+			const req = await fetch(source)
+			if(!req.status?.toString().startsWith("2")) throw new Error("Unable to fetch curated LORAs");
+			const res = await req.json()
+			this.horde_curated_loras = res
+			if (this.config.advanced?.dev) console.log("Loaded curated LORAs from remote source");
+		} catch (error) {
+			console.error("Error loading curated LORAs:", error);
+			// Initialize with empty array if both methods fail
+			this.horde_curated_loras = [];
+		}
 	}
 
 	/**

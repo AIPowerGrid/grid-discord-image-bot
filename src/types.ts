@@ -366,6 +366,7 @@ export interface Config {
         trusted_workers?: boolean,
         censor_nsfw?: boolean,
         replacement_filter?: boolean,
+        workers?: string[],
         blacklisted_words?: string[],
         blacklisted_styles?: string[],
         blacklist_regex?: string,
@@ -458,5 +459,21 @@ export interface Config {
         styles_source?: string
         style_categories_source?: string,
         model_reference_source?: string
+    },
+    channel_overrides?: {
+        [channelId: string]: {
+            // Optional per-channel styles file path; if provided, overrides global styles.json
+            styles_file?: string,
+            // Optional per-channel categories file path; if provided, overrides global categories.json
+            categories_file?: string,
+            // Explicit allowlists
+            allowed_styles?: string[],
+            allowed_categories?: string[],
+            // LORA restrictions (Civitai numeric IDs)
+            allowed_loras?: number[],
+            disallowed_loras?: number[],
+            // Channel-specific default style
+            default_style?: string
+        }
     }
 }

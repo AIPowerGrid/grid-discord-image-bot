@@ -132,6 +132,15 @@ client.on("messageCreate", async (message) => {
     
     if (!message.guild || !message.channel.isTextBased()) return;
 
+    // Check if channel is in the allowed list
+    const allowedChannels = process.env["ALLOWED_CHANNELS"]?.split(",") || [];
+    
+    // If ALLOWED_CHANNELS is set but empty, don't respond in any channel
+    if (process.env["ALLOWED_CHANNELS"] === "") return;
+    
+    // If ALLOWED_CHANNELS has values, check if current channel is allowed
+    if (allowedChannels.length > 0 && !allowedChannels.includes(message.channel.id)) return;
+
     await message.reply({
         content: `💡 You can use \`/generate prompt:${message.content}\` to create an image. Would you like me to generate an image from your message?`,
         components: [{

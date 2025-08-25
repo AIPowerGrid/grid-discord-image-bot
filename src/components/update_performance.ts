@@ -32,7 +32,7 @@ Generation Thread Count \`${performance.thread_count}\`
 Interrogation Thread Count \`${performance.interrogator_thread_count}\``
         })
         const delete_btn = new ButtonBuilder({
-            label: "Delete this message",
+            label: "Delete",
             custom_id: `delete_${ctx.interaction.user.id}`,
             style: 4
         })

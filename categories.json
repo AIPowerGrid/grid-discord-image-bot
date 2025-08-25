@@ -1,0 +1,7 @@
+{
+  "flux": ["flux", "flux-portrait", "flux-landscape", "flux-impressionist", "flux-watercolor", "flux-comic"],
+  "fluxkrea": ["fluxkrea", "fluxkrea-portrait", "fluxkrea-landscape", "fluxkrea-impressionist", "fluxkrea-watercolor", "fluxkrea-comic"],
+  "chroma": ["chroma", "chroma-portrait", "chroma-landscape", "chroma-impressionist", "chroma-watercolor", "chroma-comic"],
+  "kontext": ["flux-kontext"],
+  "sdxl": ["sdxl", "sdxl-portrait", "sdxl-landscape", "sdxl-impressionist", "sdxl-watercolor", "sdxl-comic"]
+}

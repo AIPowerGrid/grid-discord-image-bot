@@ -31,7 +31,7 @@ export default class extends Command {
         
         if(query && worker) {
             const delete_btn = new ButtonBuilder({
-                label: "Delete this message",
+                label: "Delete",
                 custom_id: `delete_${ctx.interaction.user.id}`,
                 style: 4
             })

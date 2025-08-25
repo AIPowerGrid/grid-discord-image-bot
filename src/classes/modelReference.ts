@@ -53,7 +53,7 @@ export class ModelReferenceManager {
 
             // Use the model reference source from config or default to GitHub URL
             const repoUrl = this.client.config.data_sources?.model_reference_source || 
-                "https://raw.githubusercontent.com/AIPowerGrid/image-model-reference/main/stable_diffusion.json";
+                "https://raw.githubusercontent.com/AIPowerGrid/grid-model-reference/main/stable_diffusion.json";
             
             const response = await fetch(repoUrl);
             
@@ -157,7 +157,7 @@ export class ModelReferenceManager {
         const updatedParams = { ...generationParams };
         
         // Apply steps constraints
-        if (modelRef.requirements.min_steps && modelRef.requirements.max_steps) {
+        if (modelRef.requirements && modelRef.requirements.min_steps && modelRef.requirements.max_steps) {
             const currentSteps = updatedParams.steps || 30; // Default to 30 if not specified
             
             if (currentSteps < modelRef.requirements.min_steps) {
@@ -168,12 +168,12 @@ export class ModelReferenceManager {
         }
         
         // Apply cfg_scale constraint
-        if (modelRef.requirements.cfg_scale !== undefined) {
+        if (modelRef.requirements && modelRef.requirements.cfg_scale !== undefined) {
             updatedParams.cfg_scale = modelRef.requirements.cfg_scale;
         }
         
         // Apply sampler constraint if samplers are specified
-        if (modelRef.requirements.samplers && modelRef.requirements.samplers.length > 0) {
+        if (modelRef.requirements && modelRef.requirements.samplers && modelRef.requirements.samplers.length > 0) {
             // If the current sampler isn't in the allowed list, use the first allowed one
             const currentSampler = updatedParams.sampler_name;
             if (!currentSampler || !modelRef.requirements.samplers.includes(currentSampler)) {
@@ -182,7 +182,7 @@ export class ModelReferenceManager {
         }
         
         // Apply scheduler constraints
-        if (modelRef.requirements.schedulers && modelRef.requirements.schedulers.length > 0) {
+        if (modelRef.requirements && modelRef.requirements.schedulers && modelRef.requirements.schedulers.length > 0) {
             // Currently the horde API uses karras/normal/simple as strings in params
             // Map reference scheduler names to horde API param values
             // For now, assume 'karras' in the model reference means to set karras=true
@@ -192,12 +192,12 @@ export class ModelReferenceManager {
         }
         
         // Apply width constraint if specified
-        if (modelRef.requirements.width !== undefined) {
+        if (modelRef.requirements && modelRef.requirements.width !== undefined) {
             updatedParams.width = modelRef.requirements.width;
         }
         
         // Apply height constraint if specified
-        if (modelRef.requirements.height !== undefined) {
+        if (modelRef.requirements && modelRef.requirements.height !== undefined) {
             updatedParams.height = modelRef.requirements.height;
         }
         

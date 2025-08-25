@@ -7,6 +7,7 @@ import {
     EmbedBuilder,
     MentionableSelectMenuInteraction,
     MessageComponentType,
+    ModalSubmitInteraction,
     RoleSelectMenuInteraction,
     StringSelectMenuInteraction,
     UserSelectMenuInteraction
@@ -14,13 +15,15 @@ import {
 import { BaseContext } from "./baseContext";
 import {ButtonContextInitOptions, SelectMenuContextInitOptions} from "../types";
 
-export class ComponentContext<T extends MessageComponentType> extends BaseContext {
+export class ComponentContext<T extends MessageComponentType | ModalSubmitInteraction> extends BaseContext {
     override interaction:   T extends ComponentType.Button ? ButtonInteraction
                             : T extends ComponentType.ChannelSelect ? ChannelSelectMenuInteraction
                             : T extends ComponentType.MentionableSelect ? MentionableSelectMenuInteraction
                             : T extends ComponentType.RoleSelect ? RoleSelectMenuInteraction
                             : T extends ComponentType.StringSelect ? StringSelectMenuInteraction
-                            : T extends ComponentType.UserSelect ? UserSelectMenuInteraction : AnySelectMenuInteraction
+                            : T extends ComponentType.UserSelect ? UserSelectMenuInteraction
+                            : T extends ModalSubmitInteraction ? ModalSubmitInteraction
+                            : AnySelectMenuInteraction
     constructor(options: T extends ComponentType.Button ? ButtonContextInitOptions : SelectMenuContextInitOptions) {
         super(options)
         this.interaction = options.interaction as (
@@ -29,7 +32,9 @@ export class ComponentContext<T extends MessageComponentType> extends BaseContex
             : T extends ComponentType.MentionableSelect ? MentionableSelectMenuInteraction
             : T extends ComponentType.RoleSelect ? RoleSelectMenuInteraction
             : T extends ComponentType.StringSelect ? StringSelectMenuInteraction
-            : T extends ComponentType.UserSelect ? UserSelectMenuInteraction : AnySelectMenuInteraction
+            : T extends ComponentType.UserSelect ? UserSelectMenuInteraction
+            : T extends ModalSubmitInteraction ? ModalSubmitInteraction
+            : AnySelectMenuInteraction
         )
     }
 

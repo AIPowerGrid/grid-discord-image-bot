@@ -1,4 +1,4 @@
-import { ComponentType } from "discord.js"
+import { ComponentType, ModalSubmitInteraction } from "discord.js"
 import {CustomIDInitOptions} from "../types";
 import {ComponentContext} from "./componentContext";
 
@@ -10,7 +10,7 @@ export class Component {
         this.regex = options.regex
     }
 
-    async run(_context: ComponentContext<ComponentType.Button | ComponentType.ChannelSelect | ComponentType.RoleSelect | ComponentType.MentionableSelect | ComponentType.StringSelect | ComponentType.UserSelect>): Promise<any> {
+    async run(_context: ComponentContext<ComponentType.Button | ComponentType.ChannelSelect | ComponentType.RoleSelect | ComponentType.MentionableSelect | ComponentType.StringSelect | ComponentType.UserSelect> | ComponentContext<ModalSubmitInteraction>): Promise<any> {
         throw new Error("You need to override the base run method")
     }
 }
