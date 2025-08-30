@@ -64,6 +64,40 @@ export class AIHordeClient extends Client {
 
     loadConfig() {
         const config = JSON.parse(readFileSync("./config.json").toString())
+        
+        // Override sensitive config values from environment variables
+        if (process.env['DEFAULT_TOKEN']) {
+            config.default_token = process.env['DEFAULT_TOKEN']
+        }
+        
+        if (process.env['FILTER_ACTIONS_GUILDS']) {
+            config.filter_actions = config.filter_actions || {}
+            config.filter_actions.guilds = process.env['FILTER_ACTIONS_GUILDS'].split(',').filter(id => id.trim())
+        }
+        
+        if (process.env['ALLOWED_CHANNELS']) {
+            config.allowed_channels = process.env['ALLOWED_CHANNELS'].split(',').filter(id => id.trim())
+        }
+        
+        if (process.env['MENTION_ROLES']) {
+            config.party = config.party || {}
+            config.party.mention_roles = process.env['MENTION_ROLES'].split(',').filter(id => id.trim())
+        }
+        
+        if (process.env['USE_DATABASE'] !== undefined) {
+            config.use_database = process.env['USE_DATABASE'] === 'true'
+        }
+        
+        if (process.env['ADVANCED_DEV'] !== undefined) {
+            config.advanced = config.advanced || {}
+            config.advanced.dev = process.env['ADVANCED_DEV'] === 'true'
+        }
+        
+        if (process.env['ADVANCED_ENCRRYPT_TOKEN'] !== undefined) {
+            config.advanced = config.advanced || {}
+            config.advanced.encrypt_token = process.env['ADVANCED_ENCRRYPT_TOKEN'] === 'true'
+        }
+        
         this.config = config as Config
     }
 
