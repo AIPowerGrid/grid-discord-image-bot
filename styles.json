@@ -254,7 +254,7 @@
         "model": "wan2.2-t2v-a14b",
         "steps": 4,
         "cfg_scale": 1,
-        "sampler_name": "euler",
+        "sampler_name": "k_euler",
         "width": 640,
         "height": 640,
         "fps": 16,
