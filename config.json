@@ -303,9 +303,9 @@
       },
       "1411466965813559346": {
           "allowed_styles": [
-              "wan-14b"
+              "wan2.2-t2v-a14b"
           ],
-          "default_style": "wan2_2_14b",
+          "default_style": "wan2.2-t2v-a14b",
           "content_type": "video"
       }
   }

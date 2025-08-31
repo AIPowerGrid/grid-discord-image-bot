@@ -248,5 +248,16 @@
         "karras": true,
         "width": 1024,
         "height": 1024
+    },
+    "wan2.2-t2v-a14b": {
+        "prompt": "{p}{np}",
+        "model": "wan2.2-t2v-a14b",
+        "steps": 4,
+        "cfg_scale": 1,
+        "sampler_name": "euler",
+        "width": 640,
+        "height": 640,
+        "fps": 16,
+        "length": 81
     }
 }
