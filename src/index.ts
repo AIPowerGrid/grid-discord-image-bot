@@ -139,17 +139,25 @@ client.on("messageCreate", async (message) => {
     if (process.env["ALLOWED_CHANNELS"] === "") return;
     
     // If ALLOWED_CHANNELS has values, check if current channel is allowed
-    if (allowedChannels.length > 0 && !allowedChannels.includes(message.channel.id)) return;
+    if (allowedChannels.length > 0 && !allowedChannels.includes(message.channel.id))
+        return;
+
+    // Check if this is a video generation channel
+    const channelConfig = client.config.channel_overrides?.[message.channel.id];
+    const isVideoChannel = channelConfig?.content_type === "video";
+
+    // Customize message based on channel type (video or image)
+    const contentType = isVideoChannel ? "video" : "image";
 
     await message.reply({
-        content: `💡 You can use \`/generate prompt:${message.content}\` to create an image. Would you like me to generate an image from your message?`,
+        content: `💡 You can use \`/generate prompt:${message.content}\` to create a ${contentType}. Would you like me to generate a ${contentType} from your message?`,
         components: [{
             type: 1,
             components: [{
                 type: 2,
                 style: 1,
                 custom_id: `quickgenerate_${message.content.substring(0, 80)}`,
-                label: "Generate this image"
+                label: `Generate this ${contentType}`
             }]
         }]
     });

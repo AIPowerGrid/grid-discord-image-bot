@@ -267,13 +267,15 @@
               "fluxkrea-watercolor",
               "fluxkrea-comic"
           ],
-          "default_style": "fluxkrea"
+          "default_style": "fluxkrea",
+          "content_type": "image"
       },
       "1404889886569402541": {
           "allowed_styles": [
               "flux-kontext"
           ],
-          "default_style": "flux-kontext"
+          "default_style": "flux-kontext",
+          "content_type": "image"
       },
       "1404889758479552582": {
           "allowed_styles": [
@@ -284,7 +286,8 @@
               "flux-watercolor",
               "flux-comic"
           ],
-          "default_style": "flux"
+          "default_style": "flux",
+          "content_type": "image"
       },
       "1404891756629196821": {
           "allowed_styles": [
@@ -295,7 +298,15 @@
               "sdxl-watercolor",
               "sdxl-comic"
           ],
-          "default_style": "sdxl"
+          "default_style": "sdxl",
+          "content_type": "image"
+      },
+      "1411466965813559346": {
+          "allowed_styles": [
+              "wan-14b"
+          ],
+          "default_style": "wan2_2_14b",
+          "content_type": "video"
       }
   }
 }

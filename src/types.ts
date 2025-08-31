@@ -473,7 +473,9 @@ export interface Config {
             allowed_loras?: number[],
             disallowed_loras?: number[],
             // Channel-specific default style
-            default_style?: string
+            default_style?: string,
+            // Channel-specific content type (image or video)
+            content_type?: "image" | "video"
         }
     }
 }
