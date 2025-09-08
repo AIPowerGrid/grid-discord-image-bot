@@ -1,6 +1,7 @@
 import { AttachmentBuilder, ButtonBuilder, Colors, ComponentType, EmbedBuilder, InteractionButtonComponentData } from "discord.js";
 import { Component } from "../classes/component";
 import { ComponentContext } from "../classes/componentContext";
+import { GenerationStable } from "../types/generation";
 
 export default class extends Component {
     constructor() {
@@ -254,16 +255,21 @@ ${!status.is_possible ? "**Request can not be fulfilled with current amount of w
                         
                         if (images.generations && images.generations.length > 0) {
                             console.log('[DEBUG] First generation object:', JSON.stringify(images.generations[0], null, 2));
-                            console.log('[DEBUG] First generation keys:', Object.keys(images.generations[0]));
+                            if (images.generations[0]) {
+                                console.log('[DEBUG] First generation keys:', Object.keys(images.generations[0]));
+                            }
                         }
                         
+                        // Cast generations array to our extended type
+                        const generations = images.generations as GenerationStable[] | undefined;
+                        
                         // Check if this is a video response
-                        const isVideoResponse = images.generations?.some(g => 
+                        const isVideoResponse = generations?.some(g => 
                             g.media_type === 'video' || g.form === 'video' || g.type === 'video'
                         ) || false;
                         
                         // Fallback: Check if any generation has a video filename
-                        const hasVideoFilename = images.generations?.some(g => 
+                        const hasVideoFilename = generations?.some(g => 
                             g.filename && g.filename.toLowerCase().includes('.mp4')
                         ) || false;
                         
@@ -271,7 +277,7 @@ ${!status.is_possible ? "**Request can not be fulfilled with current amount of w
                         console.log('[DEBUG] hasVideoFilename:', hasVideoFilename);
                         console.log('[DEBUG] Final video detection:', isVideoResponse || hasVideoFilename);
                         
-                        const image_map_r = images.generations?.map(async g => {
+                        const image_map_r = generations?.map(async g => {
                             // Check if media URL exists
                             if (!g.img || g.censored) return {attachment: null, generation: g};
                             
@@ -317,7 +323,8 @@ ${!status.is_possible ? "**Request can not be fulfilled with current amount of w
                             if (!g.img) return null;
                             
                             // Determine if this is a video based on generation data
-                            const isVideo = g.media_type === 'video' || g.form === 'video' || g.type === 'video';
+                            const generation = g as GenerationStable;
+                            const isVideo = generation.media_type === 'video' || generation.form === 'video' || generation.type === 'video';
                             const fileExtension = isVideo ? '.mp4' : '.webp';
                             const mediaType = isVideo ? 'video' : 'image';
                             const contentType = isVideo ? "Video" : "Image";

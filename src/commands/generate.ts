@@ -5,6 +5,7 @@ import { AutocompleteContext } from "../classes/autocompleteContext";
 import { readFileSync, appendFileSync } from "fs";
 import { Config } from "../types";
 import {ModelGenerationInputStableSamplers, ImageGenerationInput} from "aipg_horde";
+import { GenerationStable } from "../types/generation";
 import Centra from "centra";
 const {buffer2webpbuffer} = require("webp-converter")
 
@@ -494,16 +495,21 @@ ${showEta ? `**ETA:** <t:${Math.floor(Date.now()/1000)+(status?.wait_time ?? 0)}
                     
                     if (images.generations && images.generations.length > 0) {
                         console.log('[DEBUG] First generation object:', JSON.stringify(images.generations[0], null, 2));
-                        console.log('[DEBUG] First generation keys:', Object.keys(images.generations[0]));
+                        if (images.generations[0]) {
+                            console.log('[DEBUG] First generation keys:', Object.keys(images.generations[0]));
+                        }
                     }
                     
+                    // Cast generations array to our extended type
+                    const generations = images.generations as GenerationStable[] | undefined;
+                    
                     // Check if this is a video response
-                    const isVideoResponse = images.generations?.some(g => 
+                    const isVideoResponse = generations?.some(g => 
                         g.media_type === 'video' || g.form === 'video' || g.type === 'video'
                     ) || false;
                     
                     // Fallback: Check if any generation has a video filename
-                    const hasVideoFilename = images.generations?.some(g => 
+                    const hasVideoFilename = generations?.some(g => 
                         g.filename && g.filename.toLowerCase().includes('.mp4')
                     ) || false;
                     
@@ -511,7 +517,7 @@ ${showEta ? `**ETA:** <t:${Math.floor(Date.now()/1000)+(status?.wait_time ?? 0)}
                     console.log('[DEBUG] hasVideoFilename:', hasVideoFilename);
                     console.log('[DEBUG] Final video detection:', isVideoResponse || hasVideoFilename);
                     
-                    const image_map_r = images.generations?.map(async g => {
+                    const image_map_r = generations?.map(async g => {
                         try {
                             if (!g.img || typeof g.img !== 'string') {
                                 console.error(`Invalid media data received: ${g.img}`);
@@ -632,7 +638,8 @@ ${showEta ? `**ETA:** <t:${Math.floor(Date.now()/1000)+(status?.wait_time ?? 0)}
                         }
                         
                         // Determine if this is a video based on generation data
-                        const isVideo = g.media_type === 'video' || g.form === 'video' || g.type === 'video';
+                        const generation = g as GenerationStable;
+                        const isVideo = generation.media_type === 'video' || generation.form === 'video' || generation.type === 'video';
                         const fileExtension = isVideo ? '.mp4' : '.webp';
                         const mediaType = isVideo ? 'video' : 'image';
                         const contentType = isVideo ? 'Video' : 'Image';
