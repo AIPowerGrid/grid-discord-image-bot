@@ -461,6 +461,19 @@ ${showEta ? `**ETA:** <t:${Math.floor(Date.now()/1000)+(status?.wait_time ?? 0)}
         async function getCheckAndDisplayResult(precheck?: boolean) {
             if(done) return;
             const status = await ctx.ai_horde_manager.getImageGenerationCheck(generation_start!.id!).catch((e) => ctx.client.config.advanced?.dev ? console.error(e) : null);
+            
+            // Debug: Log the status for video generations
+            const isVideoChannel = ctx.client.config.channel_overrides?.[ctx.interaction.channelId!]?.content_type === "video";
+            if (isVideoChannel) {
+                console.log('[DEBUG] Video generation status:', {
+                    done: status?.done,
+                    faulted: status?.faulted,
+                    waiting: status?.waiting,
+                    processing: status?.processing,
+                    finished: status?.finished
+                });
+            }
+            
             done = !!status?.done
             const horde_data = await ctx.ai_horde_manager.getPerformance()
             if(!status || status.faulted) {
@@ -473,10 +486,33 @@ ${showEta ? `**ETA:** <t:${Math.floor(Date.now()/1000)+(status?.wait_time ?? 0)}
                 console.log(status)
             }
 
-            if(!status.done) return {status, horde_data}
-            else {
-                done = true
-                const images = await ctx.ai_horde_manager.getImageGenerationStatus(generation_start!.id!)
+            if(!status.done) {
+                // Fallback: For video generations, try to check if result is actually ready
+                if (isVideoChannel && (status?.finished > 0 || status?.processing === 0)) {
+                    console.log('[DEBUG] Video generation: checking if result is ready despite status.done being false');
+                    try {
+                        const images = await ctx.ai_horde_manager.getImageGenerationStatus(generation_start!.id!);
+                        if (images.generations && images.generations.length > 0) {
+                            console.log('[DEBUG] Found video result, proceeding with completion');
+                            done = true;
+                            // Continue to process the result
+                        } else {
+                            return {status, horde_data};
+                        }
+                    } catch (e) {
+                        console.log('[DEBUG] Fallback check failed:', e);
+                        return {status, horde_data};
+                    }
+                } else {
+                    return {status, horde_data};
+                }
+            }
+            
+            if (!done) {
+                done = true;
+            }
+            
+            const images = await ctx.ai_horde_manager.getImageGenerationStatus(generation_start!.id!)
 
                 // Debug logging to see which format is being used
                 console.log('[DEBUG] result_structure_v2_enabled:', ctx.client.config.advanced?.result_structure_v2_enabled);

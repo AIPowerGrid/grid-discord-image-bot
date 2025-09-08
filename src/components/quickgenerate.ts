@@ -181,6 +181,17 @@ ${!start_status?.is_possible ? "**Request can not be fulfilled with current amou
                 const status = await ctx.ai_horde_manager.getImageGenerationCheck(generation_start.id);
                 const horde_data = await ctx.ai_horde_manager.getPerformance();
                 
+                // Debug: Log the status for video generations
+                if (isVideoChannel) {
+                    console.log('[DEBUG] Video generation status:', {
+                        done: status?.done,
+                        faulted: status?.faulted,
+                        waiting: status?.waiting,
+                        processing: status?.processing,
+                        finished: status?.finished
+                    });
+                }
+                
                 if (!status || status.faulted) {
                     if (!done) {
                         await ctx.interaction.editReply({
@@ -240,8 +251,25 @@ ${!status.is_possible ? "**Request can not be fulfilled with current amount of w
                     }).toJSON());
                 }
                 
+                // Check if generation is complete
+                let generationComplete = status.done;
+                
+                // Fallback: For video generations, check if result is actually ready
+                if (!generationComplete && isVideoChannel && (status?.finished > 0 || status?.processing === 0)) {
+                    console.log('[DEBUG] Video generation: checking if result is ready despite status.done being false');
+                    try {
+                        const testImages = await ctx.ai_horde_manager.getImageGenerationStatus(generation_start.id);
+                        if (testImages.generations && testImages.generations.length > 0) {
+                            console.log('[DEBUG] Found video result, proceeding with completion');
+                            generationComplete = true;
+                        }
+                    } catch (e) {
+                        console.log('[DEBUG] Fallback check failed:', e);
+                    }
+                }
+                
                 // If generation is complete
-                if (status.done) {
+                if (generationComplete) {
                     done = true;
                     clearInterval(interval);
                     
