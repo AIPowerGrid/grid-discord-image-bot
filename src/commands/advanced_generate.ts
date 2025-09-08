@@ -698,7 +698,7 @@ ${!status.is_possible ? "**Request can not be fulfilled with current amount of w
                             
                             // Determine if this is a video based on generation data or response type
                             const isVideo = g.media_type === 'video' || g.form === 'video' || g.type === 'video' || isVideoResponse || hasVideoFilename;
-                            const fileExtension = isVideo ? '.mp4' : '.webp';
+                            const fileExtension = '.webp'; // Keep as WebP for both static and animated content
                             const mediaType = isVideo ? 'video' : 'image';
                             
                             console.log(`Processing ${mediaType} data for generation ${g.id}`);
