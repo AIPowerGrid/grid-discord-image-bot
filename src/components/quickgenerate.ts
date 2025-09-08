@@ -2,6 +2,7 @@ import { AttachmentBuilder, ButtonBuilder, Colors, ComponentType, EmbedBuilder, 
 import { Component } from "../classes/component";
 import { ComponentContext } from "../classes/componentContext";
 import { GenerationStable } from "../types/generation";
+import Centra from "centra";
 
 export default class extends Component {
     constructor() {
@@ -81,7 +82,7 @@ export default class extends Component {
                 censor_nsfw: ctx.client.config.generate?.censor_nsfw,
                 trusted_workers: ctx.client.config.generate?.trusted_workers,
                 workers: ctx.client.config.generate?.workers,
-                models: style.model ? [style.model] : undefined,
+                models: style.model ? (style.model === "YOLO" ? [] : [style.model]) : undefined,
                 r2: true,
                 shared: false
             };
@@ -316,11 +317,52 @@ ${!status.is_possible ? "**Request can not be fulfilled with current amount of w
                             
                             console.log(`Processing ${mediaType} data for generation ${g.id}`);
                             
-                            const req = await fetch(g.img);
-                            const blob = await req.blob();
-                            const buffer = Buffer.from(await blob.arrayBuffer());
-                            const attachment = new AttachmentBuilder(buffer, {name: `${g.id}${fileExtension}`});
-                            return {attachment, generation: g};
+                            // Log the image URL for debugging
+                            console.log(`[DEBUG] Trying to fetch: ${g.img}`);
+                            
+                            try {
+                                const req = await fetch(g.img);
+                                if (!req.ok) {
+                                    throw new Error(`HTTP error! Status: ${req.status}`);
+                                }
+                                const blob = await req.blob();
+                                const buffer = Buffer.from(await blob.arrayBuffer());
+                                const attachment = new AttachmentBuilder(buffer, {name: `${g.id}${fileExtension}`});
+                                console.log(`[DEBUG] Successfully fetched and processed ${mediaType}`);
+                                return {attachment, generation: g};
+                            } catch (fetchError) {
+                                console.error(`[ERROR] Failed to fetch ${mediaType}: ${fetchError}`);
+                                
+                                // Try with Centra as fallback
+                                try {
+                                    console.log(`[DEBUG] Trying with Centra as fallback...`);
+                                    const centraReq = await Centra(g.img, "GET").timeout(30000).send();
+                                    const attachment = new AttachmentBuilder(centraReq.body, {name: `${g.id}${fileExtension}`});
+                                    console.log(`[DEBUG] Centra fallback succeeded`);
+                                    return {attachment, generation: g};
+                                } catch (centraError) {
+                                    console.error(`[ERROR] Centra fallback failed: ${centraError}`);
+                                    
+                                    // Last resort - try to interpret as base64
+                                    if (g.img && g.img.length > 100) {
+                                        try {
+                                            console.log(`[DEBUG] Trying as base64...`);
+                                            const base64Data = g.img.includes(',') ? g.img.split(',')[1] : g.img;
+                                            if (base64Data) {
+                                                const buffer = Buffer.from(base64Data, 'base64');
+                                                const attachment = new AttachmentBuilder(buffer, {name: `${g.id}${fileExtension}`});
+                                                return {attachment, generation: g};
+                                            }
+                                            throw new Error("No valid base64 data found");
+                                        } catch (base64Error) {
+                                            console.error(`[ERROR] Base64 processing failed: ${base64Error}`);
+                                        }
+                                    }
+                                    
+                                    // If all attempts fail
+                                    return {attachment: null, generation: g};
+                                }
+                            }
                         }) || [];
                         
                         const image_map = await Promise.all(image_map_r);
