@@ -255,7 +255,7 @@ ${!status.is_possible ? "**Request can not be fulfilled with current amount of w
                 let generationComplete = status.done;
                 
                 // Fallback: For video generations, check if result is actually ready
-                if (!generationComplete && isVideoChannel && (status?.finished > 0 || status?.processing === 0)) {
+                if (!generationComplete && isVideoChannel && ((status?.finished && status.finished > 0) || status?.processing === 0)) {
                     console.log('[DEBUG] Video generation: checking if result is ready despite status.done being false');
                     try {
                         const testImages = await ctx.ai_horde_manager.getImageGenerationStatus(generation_start.id);
