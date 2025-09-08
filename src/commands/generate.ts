@@ -8,6 +8,7 @@ import {ModelGenerationInputStableSamplers, ImageGenerationInput} from "aipg_hor
 import { GenerationStable } from "../types/generation";
 import Centra from "centra";
 import { isAnimatedWebp } from "../utils/webpUtils";
+import { convertWebpToGif } from "../utils/webpConverter";
 const {buffer2webpbuffer} = require("webp-converter")
 
 const config = JSON.parse(readFileSync("./config.json").toString()) as Config
@@ -564,7 +565,7 @@ ${showEta ? `**ETA:** <t:${Math.floor(Date.now()/1000)+(status?.wait_time ?? 0)}
                         
                         // Determine if this is a video based on generation data or response type
                         const isVideo = g.media_type === 'video' || g.form === 'video' || g.type === 'video' || isVideoResponse || hasVideoFilename;
-                        const fileExtension = '.webp'; // Keep as WebP for both static and animated content
+                        let fileExtension = '.webp'; // Initially set to WebP, but may change to .gif if converted
                         const mediaType = isVideo ? 'video' : 'image';
                         
                         console.log(`[DEBUG] Content detected as ${mediaType}, isVideo=${isVideo}, response=${isVideoResponse}, hasVideoFilename=${hasVideoFilename}`);
@@ -595,6 +596,19 @@ ${showEta ? `**ETA:** <t:${Math.floor(Date.now()/1000)+(status?.wait_time ?? 0)}
                                 const isAnimated = isAnimatedWebp(buffer);
                                 console.log(`[DEBUG] WebP animation check: isAnimated=${isAnimated}`);
                                 
+                                // Convert to GIF if it's a video/animated content
+                                if (isVideo || isAnimated) {
+                                    try {
+                                        console.log(`[DEBUG] Converting animated WebP to GIF for better Discord compatibility`);
+                                        buffer = await convertWebpToGif(buffer);
+                                        console.log(`[DEBUG] WebP to GIF conversion successful`);
+                                        fileExtension = '.gif';
+                                    } catch (conversionError) {
+                                        console.error(`[ERROR] Failed to convert WebP to GIF:`, conversionError);
+                                        // Continue with original buffer if conversion fails
+                                    }
+                                }
+                                
                                 const filename = isVideo ? `video_${g.id}${fileExtension}` : `${g.id}${fileExtension}`;
                                 
                                 console.log(`[DEBUG] Creating attachment with filename: ${filename}, isVideo: ${isVideo}`);
@@ -612,6 +626,19 @@ ${showEta ? `**ETA:** <t:${Math.floor(Date.now()/1000)+(status?.wait_time ?? 0)}
                                 let buffer = Buffer.from(g.img, 'base64');
                                 const isAnimated = isAnimatedWebp(buffer);
                                 console.log(`[DEBUG] WebP animation check: isAnimated=${isAnimated}`);
+                                
+                                // Convert to GIF if it's a video/animated content
+                                if (isVideo || isAnimated) {
+                                    try {
+                                        console.log(`[DEBUG] Converting animated WebP to GIF for better Discord compatibility`);
+                                        buffer = await convertWebpToGif(buffer);
+                                        console.log(`[DEBUG] WebP to GIF conversion successful`);
+                                        fileExtension = '.gif';
+                                    } catch (conversionError) {
+                                        console.error(`[ERROR] Failed to convert WebP to GIF:`, conversionError);
+                                        // Continue with original buffer if conversion fails
+                                    }
+                                }
                                 
                                 const filename = isVideo ? `video_${g.id}${fileExtension}` : `${g.id}${fileExtension}`;
                                 
@@ -632,6 +659,19 @@ ${showEta ? `**ETA:** <t:${Math.floor(Date.now()/1000)+(status?.wait_time ?? 0)}
                                 const isAnimated = isAnimatedWebp(buffer);
                                 console.log(`[DEBUG] WebP animation check: isAnimated=${isAnimated}`);
                                 
+                                // Convert to GIF if it's a video/animated content
+                                if (isVideo || isAnimated) {
+                                    try {
+                                        console.log(`[DEBUG] Converting animated WebP to GIF for better Discord compatibility`);
+                                        buffer = await convertWebpToGif(buffer);
+                                        console.log(`[DEBUG] WebP to GIF conversion successful`);
+                                        fileExtension = '.gif';
+                                    } catch (conversionError) {
+                                        console.error(`[ERROR] Failed to convert WebP to GIF:`, conversionError);
+                                        // Continue with original buffer if conversion fails
+                                    }
+                                }
+                                
                                 const filename = isVideo ? `video_${g.id}${fileExtension}` : `${g.id}${fileExtension}`;
                                 
                                 console.log(`[DEBUG] Creating attachment with filename: ${filename}, isVideo: ${isVideo}`);
@@ -648,6 +688,19 @@ ${showEta ? `**ETA:** <t:${Math.floor(Date.now()/1000)+(status?.wait_time ?? 0)}
                                             let buffer = Buffer.from(g.img, 'base64');
                                             const isAnimated = isAnimatedWebp(buffer);
                                             console.log(`[DEBUG] WebP animation check: isAnimated=${isAnimated}`);
+                                            
+                                            // Convert to GIF if it's a video/animated content
+                                            if (isVideo || isAnimated) {
+                                                try {
+                                                    console.log(`[DEBUG] Converting animated WebP to GIF for better Discord compatibility`);
+                                                    buffer = await convertWebpToGif(buffer);
+                                                    console.log(`[DEBUG] WebP to GIF conversion successful`);
+                                                    fileExtension = '.gif';
+                                                } catch (conversionError) {
+                                                    console.error(`[ERROR] Failed to convert WebP to GIF:`, conversionError);
+                                                    // Continue with original buffer if conversion fails
+                                                }
+                                            }
                                             
                                             const filename = isVideo ? `video_${g.id}${fileExtension}` : `${g.id}${fileExtension}`;
                                             
