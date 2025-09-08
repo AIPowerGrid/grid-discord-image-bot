@@ -248,17 +248,35 @@ ${!status.is_possible ? "**Request can not be fulfilled with current amount of w
                     const images = await ctx.ai_horde_manager.getImageGenerationStatus(generation_start.id);
                     
                     if (ctx.client.config.advanced?.result_structure_v2_enabled ?? true) {
+                        // Debug: Log the entire response structure
+                        console.log('[DEBUG] Full images response:', JSON.stringify(images, null, 2));
+                        console.log('[DEBUG] Generations array:', images.generations);
+                        
+                        if (images.generations && images.generations.length > 0) {
+                            console.log('[DEBUG] First generation object:', JSON.stringify(images.generations[0], null, 2));
+                            console.log('[DEBUG] First generation keys:', Object.keys(images.generations[0]));
+                        }
+                        
                         // Check if this is a video response
                         const isVideoResponse = images.generations?.some(g => 
                             g.media_type === 'video' || g.form === 'video' || g.type === 'video'
                         ) || false;
+                        
+                        // Fallback: Check if any generation has a video filename
+                        const hasVideoFilename = images.generations?.some(g => 
+                            g.filename && g.filename.toLowerCase().includes('.mp4')
+                        ) || false;
+                        
+                        console.log('[DEBUG] isVideoResponse:', isVideoResponse);
+                        console.log('[DEBUG] hasVideoFilename:', hasVideoFilename);
+                        console.log('[DEBUG] Final video detection:', isVideoResponse || hasVideoFilename);
                         
                         const image_map_r = images.generations?.map(async g => {
                             // Check if media URL exists
                             if (!g.img || g.censored) return {attachment: null, generation: g};
                             
                             // Determine if this is a video based on generation data or response type
-                            const isVideo = g.media_type === 'video' || g.form === 'video' || g.type === 'video' || isVideoResponse;
+                            const isVideo = g.media_type === 'video' || g.form === 'video' || g.type === 'video' || isVideoResponse || hasVideoFilename;
                             const fileExtension = isVideo ? '.mp4' : '.webp';
                             const mediaType = isVideo ? 'video' : 'image';
                             
@@ -274,8 +292,8 @@ ${!status.is_possible ? "**Request can not be fulfilled with current amount of w
                         const image_map = await Promise.all(image_map_r);
                         const files = image_map.filter(i => i.attachment).map(i => i.attachment) as AttachmentBuilder[];
                         
-                        const contentType = isVideoResponse ? "video" : "image";
-                        const contentTypePlural = isVideoResponse ? "videos" : "images";
+                        const contentType = (isVideoResponse || hasVideoFilename) ? "video" : "image";
+                        const contentTypePlural = (isVideoResponse || hasVideoFilename) ? "videos" : "images";
                         const resultComponents = [{type: 1, components: [regenerate_btn, delete_btn]}];
                         const resultEmbeds = [
                             new EmbedBuilder({

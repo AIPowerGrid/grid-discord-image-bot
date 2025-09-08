@@ -488,10 +488,28 @@ ${showEta ? `**ETA:** <t:${Math.floor(Date.now()/1000)+(status?.wait_time ?? 0)}
                 console.log('[DEBUG] generationParams.sampler_name:', generationParams.sampler_name);
 
                 if(ctx.client.config.advanced?.result_structure_v2_enabled ?? true) {
+                    // Debug: Log the entire response structure
+                    console.log('[DEBUG] Full images response:', JSON.stringify(images, null, 2));
+                    console.log('[DEBUG] Generations array:', images.generations);
+                    
+                    if (images.generations && images.generations.length > 0) {
+                        console.log('[DEBUG] First generation object:', JSON.stringify(images.generations[0], null, 2));
+                        console.log('[DEBUG] First generation keys:', Object.keys(images.generations[0]));
+                    }
+                    
                     // Check if this is a video response
                     const isVideoResponse = images.generations?.some(g => 
                         g.media_type === 'video' || g.form === 'video' || g.type === 'video'
                     ) || false;
+                    
+                    // Fallback: Check if any generation has a video filename
+                    const hasVideoFilename = images.generations?.some(g => 
+                        g.filename && g.filename.toLowerCase().includes('.mp4')
+                    ) || false;
+                    
+                    console.log('[DEBUG] isVideoResponse:', isVideoResponse);
+                    console.log('[DEBUG] hasVideoFilename:', hasVideoFilename);
+                    console.log('[DEBUG] Final video detection:', isVideoResponse || hasVideoFilename);
                     
                     const image_map_r = images.generations?.map(async g => {
                         try {
@@ -501,7 +519,7 @@ ${showEta ? `**ETA:** <t:${Math.floor(Date.now()/1000)+(status?.wait_time ?? 0)}
                             }
                             
                             // Determine if this is a video based on generation data or response type
-                            const isVideo = g.media_type === 'video' || g.form === 'video' || g.type === 'video' || isVideoResponse;
+                            const isVideo = g.media_type === 'video' || g.form === 'video' || g.type === 'video' || isVideoResponse || hasVideoFilename;
                             const fileExtension = isVideo ? '.mp4' : '.webp';
                             const mediaType = isVideo ? 'video' : 'image';
                             
@@ -576,8 +594,8 @@ ${showEta ? `**ETA:** <t:${Math.floor(Date.now()/1000)+(status?.wait_time ?? 0)}
                     let components = [{type: 1, components: [regenerate_btn, delete_btn]}]
                     
                     // Determine content type for display
-                    const contentType = isVideoResponse ? "video" : "image";
-                    const contentTypePlural = isVideoResponse ? "videos" : "images";
+                    const contentType = (isVideoResponse || hasVideoFilename) ? "video" : "image";
+                    const contentTypePlural = (isVideoResponse || hasVideoFilename) ? "videos" : "images";
                     
                     const embeds = [
                         new EmbedBuilder({
