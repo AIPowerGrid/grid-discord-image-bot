@@ -481,210 +481,97 @@ ${showEta ? `**ETA:** <t:${Math.floor(Date.now()/1000)+(status?.wait_time ?? 0)}
                 if(!precheck) clearInterval(inter)
                 return null;
             }
-
+        
             if(ctx.client.config.advanced?.dev) {
                 console.log(status)
             }
-
-            if(!status.done) {
-                // Fallback: For video generations, try to check if result is actually ready
-                if (isVideoChannel && (status?.finished > 0 || status?.processing === 0)) {
-                    console.log('[DEBUG] Video generation: checking if result is ready despite status.done being false');
-                    try {
-                        const images = await ctx.ai_horde_manager.getImageGenerationStatus(generation_start!.id!);
-                        if (images.generations && images.generations.length > 0) {
-                            console.log('[DEBUG] Found video result, proceeding with completion');
-                            done = true;
-                            // Continue to process the result
-                        } else {
-                            return {status, horde_data};
-                        }
-                    } catch (e) {
-                        console.log('[DEBUG] Fallback check failed:', e);
-                        return {status, horde_data};
+        
+            // Regular status check or video fallback check
+            if (!status.done) {
+                // For non-video channels or when not ready, just return status
+                if (!isVideoChannel || (!(status?.finished && status.finished > 0) && status?.processing !== 0)) {
+                    return {status, horde_data};
+                }
+                
+                // Fallback for video channels
+                console.log('[DEBUG] Video generation: checking if result is ready despite status.done being false');
+                try {
+                    const testImages = await ctx.ai_horde_manager.getImageGenerationStatus(generation_start!.id!);
+                    if (!testImages.generations || testImages.generations.length === 0) {
+                        return {status, horde_data}; 
                     }
-                } else {
+                    
+                    console.log('[DEBUG] Found video result, proceeding with completion');
+                    done = true;
+                } catch (e) {
+                    console.log('[DEBUG] Fallback check failed:', e);
                     return {status, horde_data};
                 }
             }
             
-            if (!done) {
-                done = true;
-            }
+            // When we get here, we're processing the completed generation
+            done = true;
+            const images = await ctx.ai_horde_manager.getImageGenerationStatus(generation_start!.id!);
             
-            const images = await ctx.ai_horde_manager.getImageGenerationStatus(generation_start!.id!)
-
-                // Debug logging to see which format is being used
-                console.log('[DEBUG] result_structure_v2_enabled:', ctx.client.config.advanced?.result_structure_v2_enabled);
-                console.log('[DEBUG] Using format:', (ctx.client.config.advanced?.result_structure_v2_enabled ?? true) ? 'v2' : 'legacy');
-                console.log('[DEBUG] generationParams:', generationParams);
-                console.log('[DEBUG] generationParams.width:', generationParams.width);
-                console.log('[DEBUG] generationParams.height:', generationParams.height);
-                console.log('[DEBUG] generationParams.steps:', generationParams.steps);
-                console.log('[DEBUG] generationParams.cfg_scale:', generationParams.cfg_scale);
-                console.log('[DEBUG] generationParams.sampler_name:', generationParams.sampler_name);
-
-                if(ctx.client.config.advanced?.result_structure_v2_enabled ?? true) {
-                    // Debug: Log the entire response structure
-                    console.log('[DEBUG] Full images response:', JSON.stringify(images, null, 2));
-                    console.log('[DEBUG] Generations array:', images.generations);
-                    
-                    if (images.generations && images.generations.length > 0) {
-                        console.log('[DEBUG] First generation object:', JSON.stringify(images.generations[0], null, 2));
-                        if (images.generations[0]) {
-                            console.log('[DEBUG] First generation keys:', Object.keys(images.generations[0]));
-                        }
+            // Debug logging to see which format is being used
+            console.log('[DEBUG] result_structure_v2_enabled:', ctx.client.config.advanced?.result_structure_v2_enabled);
+            console.log('[DEBUG] Using format:', (ctx.client.config.advanced?.result_structure_v2_enabled ?? true) ? 'v2' : 'legacy');
+            console.log('[DEBUG] generationParams:', generationParams);
+            console.log('[DEBUG] generationParams.width:', generationParams.width);
+            console.log('[DEBUG] generationParams.height:', generationParams.height);
+            console.log('[DEBUG] generationParams.steps:', generationParams.steps);
+            console.log('[DEBUG] generationParams.cfg_scale:', generationParams.cfg_scale);
+            console.log('[DEBUG] generationParams.sampler_name:', generationParams.sampler_name);
+            
+            if(!precheck) clearInterval(inter);
+        
+            if(ctx.client.config.advanced?.result_structure_v2_enabled ?? true) {
+                // Debug: Log the entire response structure
+                console.log('[DEBUG] Full images response:', JSON.stringify(images, null, 2));
+                console.log('[DEBUG] Generations array:', images.generations);
+                
+                if (images.generations && images.generations.length > 0) {
+                    console.log('[DEBUG] First generation object:', JSON.stringify(images.generations[0], null, 2));
+                    if (images.generations[0]) {
+                        console.log('[DEBUG] First generation keys:', Object.keys(images.generations[0]));
                     }
-                    
-                    // Cast generations array to our extended type
-                    const generations = images.generations as GenerationStable[] | undefined;
-                    
-                    // Check if this is a video response
-                    const isVideoResponse = generations?.some(g => 
-                        g.media_type === 'video' || g.form === 'video' || g.type === 'video'
-                    ) || false;
-                    
-                    // Fallback: Check if any generation has a video filename
-                    const hasVideoFilename = generations?.some(g => 
-                        g.filename && g.filename.toLowerCase().includes('.mp4')
-                    ) || false;
-                    
-                    console.log('[DEBUG] isVideoResponse:', isVideoResponse);
-                    console.log('[DEBUG] hasVideoFilename:', hasVideoFilename);
-                    console.log('[DEBUG] Final video detection:', isVideoResponse || hasVideoFilename);
-                    
-                    const image_map_r = generations?.map(async g => {
-                        try {
-                            if (!g.img || typeof g.img !== 'string') {
-                                console.error(`Invalid media data received: ${g.img}`);
-                                return {attachment: null, generation: g};
-                            }
-                            
-                            // Determine if this is a video based on generation data or response type
-                            const isVideo = g.media_type === 'video' || g.form === 'video' || g.type === 'video' || isVideoResponse || hasVideoFilename;
-                            const fileExtension = isVideo ? '.mp4' : '.webp';
-                            const mediaType = isVideo ? 'video' : 'image';
-                            
-                            console.log(`Processing ${mediaType} data for generation ${g.id}`);
-                            
-                            // Log the media data type and check if it's a valid URL
-                            let isValidUrl = false;
-                            try {
-                                // Just check if the URL is valid, don't actually fetch it yet
-                                new URL(g.img);
-                                isValidUrl = true;
-                                console.log(`${mediaType} data appears to be a valid URL`);
-                            } catch (e) {
-                                console.log(`${mediaType} data is not a valid URL, treating as Base64`);
-                                isValidUrl = false;
-                            }
-                            
-                            let attachment = null;
-                            if (g.censored) {
-                                return {attachment: null, generation: g};
-                            } else if (g.img.startsWith('data:')) {
-                                // Standard Base64 media with data: prefix
-                                console.log(`Processing as Base64 ${mediaType} with data: prefix`);
-                                const parts = g.img.split(',');
-                                if (parts.length > 1) {
-                                    const buffer = Buffer.from(parts[1] as string, 'base64');
-                                    attachment = new AttachmentBuilder(buffer, {name: `${g.id}${fileExtension}`});
-                                } else {
-                                    throw new Error(`Invalid Base64 format with data: prefix`);
-                                }
-                            } else if (!isValidUrl) {
-                                // Raw Base64 media without data: prefix
-                                console.log(`Processing as raw Base64 ${mediaType} without data: prefix`);
-                                try {
-                                    const buffer = Buffer.from(g.img, 'base64');
-                                    attachment = new AttachmentBuilder(buffer, {name: `${g.id}${fileExtension}`});
-                                } catch (base64Error) {
-                                    console.error(`Failed to process as raw Base64:`, base64Error);
-                                }
-                            } else {
-                                // Valid URL media
-                                console.log(`Fetching ${mediaType} URL: ${g.img}`);
-                                try {
-                                    const req = await Centra(g.img, "GET").send();
-                                    attachment = new AttachmentBuilder(req.body, {name: `${g.id}${fileExtension}`});
-                                } catch (urlError) {
-                                    console.error(`Failed to fetch ${mediaType} URL:`, urlError);
-                                    // If URL fetch fails, try as base64 as a last resort
-                                    if (g.img.length > 100) {
-                                        console.log(`URL fetch failed, trying as Base64 as last resort`);
-                                        try {
-                                            const buffer = Buffer.from(g.img, 'base64');
-                                            attachment = new AttachmentBuilder(buffer, {name: `${g.id}${fileExtension}`});
-                                        } catch (fallbackError) {
-                                            console.error('Fallback to Base64 also failed:', fallbackError);
-                                        }
-                                    }
-                                }
-                            }
-                            
-                            return {attachment, generation: g};
-                        } catch (error: unknown) {
-                            console.error(`Error processing media: ${error instanceof Error ? error.message : String(error)}`);
-                            return {attachment: null, generation: g};
-                        }
-                    }) || [];
-                    if(!precheck) clearInterval(inter);
-
-                    const image_map = await Promise.all(image_map_r)
-                    const files = image_map.filter(i => i.attachment !== null).map(i => i.attachment!) as AttachmentBuilder[]
-                    if(img_data && image_map.length < 10) files.push(new AttachmentBuilder(img_data, {name: "original.webp"}))
-                    let components = [{type: 1, components: [regenerate_btn, delete_btn]}]
-                    
-                    // Determine content type for display
-                    const contentType = (isVideoResponse || hasVideoFilename) ? "video" : "image";
-                    const contentTypePlural = (isVideoResponse || hasVideoFilename) ? "videos" : "images";
-                    
-                    const embeds = [
-                        new EmbedBuilder({
-                            title: `${contentType.charAt(0).toUpperCase() + contentType.slice(1)} Generation Finished`,
-                            description: `**Prompt** ${ctx.interaction.options.getString("prompt", true)}\n**Style** \`${style?.name ?? style_raw}\`${style?.type === "category-style" ? ` from category \`${style_raw}\`` : ""}\n**Parameters** \`${generationParams.width}x${generationParams.height}\` | \`${generationParams.steps} steps\` | \`CFG ${generationParams.cfg_scale}\` | \`${generationParams.sampler_name}\`${image_map.length === 1 && image_map[0]?.generation?.seed ? ` | \`Seed ${image_map[0].generation.seed}\`` : ""}\n**Credits Consumed** \`${images.kudos}\`${image_map.length !== amount ? `\nCensored ${contentTypePlural} are not displayed` : ""}${image_map.length === 1 && image_map[0]?.generation?.worker_name ? `\n**Generated by** ${image_map[0].generation.worker_name}\n(\`${image_map[0].generation.worker_id ?? "unknown"}\`)` : ""}`,
-                            color: Colors.Blue,
-                            footer: {text: `Generation ID ${generation_start!.id}`},
-                            thumbnail: img_data && image_map.length < 10 ? {url: "attachment://original.webp"} : img_data ? {url: img!.url} : undefined
-                        })
-                    ]
-
-                    if(ctx.client.config.generate?.user_restrictions?.allow_rating && (generation_data.shared ?? true) && files.length === 1) {
-                        components = [...generateButtons(generation_start!.id!), ...components] as { type: number; components: Array<any> }[]
-                    }
-                    await message.edit({content: null, components, embeds, files});
-                    if(party) await handlePartySubmit()
-                    return null
                 }
-
-
-
-                const image_map_r = images.generations?.map(async (g, i) => {
+                
+                // Cast generations array to our extended type
+                const generations = images.generations as GenerationStable[] | undefined;
+                
+                // Check if this is a video response
+                const isVideoResponse = generations?.some(g => 
+                    g.media_type === 'video' || g.form === 'video' || g.type === 'video'
+                ) || false;
+                
+                // Fallback: Check if any generation has a video filename
+                const hasVideoFilename = generations?.some(g => 
+                    g.filename && g.filename.toLowerCase().includes('.mp4')
+                ) || false;
+                
+                console.log('[DEBUG] isVideoResponse:', isVideoResponse);
+                console.log('[DEBUG] hasVideoFilename:', hasVideoFilename);
+                console.log('[DEBUG] Final video detection:', isVideoResponse || hasVideoFilename);
+                
+                const image_map_r = generations?.map(async g => {
                     try {
                         if (!g.img || typeof g.img !== 'string') {
                             console.error(`Invalid media data received: ${g.img}`);
-                            return {
-                                attachment: null,
-                                embed: new EmbedBuilder({
-                                    title: `Media ${i+1} (Error)`,
-                                    color: Colors.Red,
-                                    description: `Failed to load media. ${!i ? `\n**Raw Prompt:** ${ctx.interaction.options.getString("prompt", true)}\n**Processed Prompt:** ${prompt}\n**Style:** \`${style?.name ?? style_raw}\`${style?.type === "category-style" ? ` from category \`${style_raw}\`` : ""}\n**Total Tokens Cost:** \`${images.kudos}\`` : ""}`,
-                                })
-                            };
+                            return {attachment: null, generation: g};
                         }
                         
-                        // Determine if this is a video based on generation data
-                        const generation = g as GenerationStable;
-                        const isVideo = generation.media_type === 'video' || generation.form === 'video' || generation.type === 'video';
+                        // Determine if this is a video based on generation data or response type
+                        const isVideo = g.media_type === 'video' || g.form === 'video' || g.type === 'video' || isVideoResponse || hasVideoFilename;
                         const fileExtension = isVideo ? '.mp4' : '.webp';
                         const mediaType = isVideo ? 'video' : 'image';
-                        const contentType = isVideo ? 'Video' : 'Image';
                         
                         console.log(`Processing ${mediaType} data for generation ${g.id}`);
                         
-                        // Check if it's a valid URL
+                        // Log the media data type and check if it's a valid URL
                         let isValidUrl = false;
                         try {
+                            // Just check if the URL is valid, don't actually fetch it yet
                             new URL(g.img);
                             isValidUrl = true;
                             console.log(`${mediaType} data appears to be a valid URL`);
@@ -694,78 +581,87 @@ ${showEta ? `**ETA:** <t:${Math.floor(Date.now()/1000)+(status?.wait_time ?? 0)}
                         }
                         
                         let attachment = null;
-                        if (g.img.startsWith('data:')) {
+                        if (g.censored) {
+                            return {attachment: null, generation: g};
+                        } else if (g.img.startsWith('data:')) {
                             // Standard Base64 media with data: prefix
                             console.log(`Processing as Base64 ${mediaType} with data: prefix`);
-                            try {
-                                const parts = g.img.split(',');
-                                if (parts.length > 1) {
-                                    const buffer = Buffer.from(parts[1] as string, 'base64');
-                                    attachment = new AttachmentBuilder(buffer, {name: `${g.seed ?? `${mediaType.toLowerCase()}${i}`}${fileExtension}`});
-                                } else {
-                                    throw new Error(`Invalid Base64 format with data: prefix`);
-                                }
-                            } catch (base64Error) {
-                                console.error(`Failed to process Base64 ${mediaType} with prefix:`, base64Error);
-                                throw base64Error;
+                            const parts = g.img.split(',');
+                            if (parts.length > 1) {
+                                const buffer = Buffer.from(parts[1] as string, 'base64');
+                                attachment = new AttachmentBuilder(buffer, {name: `${g.id}${fileExtension}`});
+                            } else {
+                                throw new Error(`Invalid Base64 format with data: prefix`);
                             }
                         } else if (!isValidUrl) {
                             // Raw Base64 media without data: prefix
                             console.log(`Processing as raw Base64 ${mediaType} without data: prefix`);
                             try {
                                 const buffer = Buffer.from(g.img, 'base64');
-                                attachment = new AttachmentBuilder(buffer, {name: `${g.seed ?? `${mediaType.toLowerCase()}${i}`}${fileExtension}`});
+                                attachment = new AttachmentBuilder(buffer, {name: `${g.id}${fileExtension}`});
                             } catch (base64Error) {
                                 console.error(`Failed to process as raw Base64:`, base64Error);
-                                throw base64Error;
                             }
                         } else {
                             // Valid URL media
                             console.log(`Fetching ${mediaType} URL: ${g.img}`);
                             try {
-                                const req = await Centra(g.img, "get").timeout(30000).send();
-                                if(ctx.client.config.advanced?.dev) console.log(req);
-                                attachment = new AttachmentBuilder(req.body, {name: `${g.seed ?? `${mediaType.toLowerCase()}${i}`}${fileExtension}`});
+                                const req = await Centra(g.img, "GET").send();
+                                attachment = new AttachmentBuilder(req.body, {name: `${g.id}${fileExtension}`});
                             } catch (urlError) {
                                 console.error(`Failed to fetch ${mediaType} URL:`, urlError);
-                                // Try with fetch as fallback
-                                try {
-                                    console.log('Trying fetch as fallback...');
-                                    const response = await fetch(g.img, { 
-                                        signal: AbortSignal.timeout(30000) 
-                                    });
-                                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                                    const arrayBuffer = await response.arrayBuffer();
-                                    attachment = new AttachmentBuilder(Buffer.from(arrayBuffer), {name: `${g.seed ?? `${mediaType.toLowerCase()}${i}`}${fileExtension}`});
-                                } catch (fetchError) {
-                                    console.error('Fetch fallback also failed:', fetchError);
-                                    // If URL fetch fails, try as base64 as a last resort
-                                    if (g.img.length > 100) {
-                                        console.log(`URL fetch failed, trying as Base64 as last resort`);
-                                        try {
-                                            const buffer = Buffer.from(g.img, 'base64');
-                                            attachment = new AttachmentBuilder(buffer, {name: `${g.seed ?? `${mediaType.toLowerCase()}${i}`}${fileExtension}`});
-                                        } catch (fallbackError) {
-                                            console.error('Fallback to Base64 also failed');
-                                            throw urlError;
-                                        }
-                                    } else {
-                                        throw urlError;
+                                // If URL fetch fails, try as base64 as a last resort
+                                if (g.img.length > 100) {
+                                    console.log(`URL fetch failed, trying as Base64 as last resort`);
+                                    try {
+                                        const buffer = Buffer.from(g.img, 'base64');
+                                        attachment = new AttachmentBuilder(buffer, {name: `${g.id}${fileExtension}`});
+                                    } catch (fallbackError) {
+                                        console.error('Fallback to Base64 also failed:', fallbackError);
                                     }
                                 }
                             }
                         }
                         
-                        const embed = new EmbedBuilder({
-                            title: `${contentType} ${i+1}`,
-                            image: {url: `attachment://${g.seed ?? `${mediaType.toLowerCase()}${i}`}${fileExtension}`},
-                            color: Colors.Blue,
-                            description: `${!i ? `**Raw Prompt:** ${ctx.interaction.options.getString("prompt", true)}\n**Processed Prompt:** ${prompt}\n**Style:** \`${style?.name ?? style_raw}\`${style?.type === "category-style" ? ` from category \`${style_raw}\`` : ""}\n**Parameters:** \`${generationParams.width}x${generationParams.height}\` | \`${generationParams.steps} steps\` | \`CFG ${generationParams.cfg_scale}\` | \`${generationParams.sampler_name}\`${g.seed ? ` | \`Seed ${g.seed}\`` : ""}\n**Total Tokens Cost:** \`${images.kudos}\`` : ""}${ctx.client.config.advanced?.dev ? `\n\n**${contentType} ID** ${g.id}` : ""}` || undefined,
-                        });
-                        if(img_data) embed.setThumbnail(`attachment://original.webp`);
-                        return {attachment, embed};
+                        return {attachment, generation: g};
                     } catch (error: unknown) {
                         console.error(`Error processing media: ${error instanceof Error ? error.message : String(error)}`);
+                        return {attachment: null, generation: g};
+                    }
+                }) || [];
+        
+                const image_map = await Promise.all(image_map_r)
+                const files = image_map.filter(i => i.attachment !== null).map(i => i.attachment!) as AttachmentBuilder[]
+                if(img_data && image_map.length < 10) files.push(new AttachmentBuilder(img_data, {name: "original.webp"}))
+                let components = [{type: 1, components: [regenerate_btn, delete_btn]}]
+                
+                // Determine content type for display
+                const contentType = (isVideoResponse || hasVideoFilename) ? "video" : "image";
+                const contentTypePlural = (isVideoResponse || hasVideoFilename) ? "videos" : "images";
+                
+                const embeds = [
+                    new EmbedBuilder({
+                        title: `${contentType.charAt(0).toUpperCase() + contentType.slice(1)} Generation Finished`,
+                        description: `**Prompt** ${ctx.interaction.options.getString("prompt", true)}\n**Style** \`${style?.name ?? style_raw}\`${style?.type === "category-style" ? ` from category \`${style_raw}\`` : ""}\n**Parameters** \`${generationParams.width}x${generationParams.height}\` | \`${generationParams.steps} steps\` | \`CFG ${generationParams.cfg_scale}\` | \`${generationParams.sampler_name}\`${image_map.length === 1 && image_map[0]?.generation?.seed ? ` | \`Seed ${image_map[0].generation.seed}\`` : ""}\n**Credits Consumed** \`${images.kudos}\`${image_map.length !== amount ? `\nCensored ${contentTypePlural} are not displayed` : ""}${image_map.length === 1 && image_map[0]?.generation?.worker_name ? `\n**Generated by** ${image_map[0].generation.worker_name}\n(\`${image_map[0].generation.worker_id ?? "unknown"}\`)` : ""}`,
+                        color: Colors.Blue,
+                        footer: {text: `Generation ID ${generation_start!.id}`},
+                        thumbnail: img_data && image_map.length < 10 ? {url: "attachment://original.webp"} : img_data ? {url: img!.url} : undefined
+                    })
+                ]
+        
+                if(ctx.client.config.generate?.user_restrictions?.allow_rating && (generation_data.shared ?? true) && files.length === 1) {
+                    components = [...generateButtons(generation_start!.id!), ...components] as { type: number; components: Array<any> }[]
+                }
+                await message.edit({content: null, components, embeds, files});
+                if(party) await handlePartySubmit()
+                return null
+            }
+        
+            // Legacy format processing
+            const image_map_r = images.generations?.map(async (g, i) => {
+                try {
+                    if (!g.img || typeof g.img !== 'string') {
+                        console.error(`Invalid media data received: ${g.img}`);
                         return {
                             attachment: null,
                             embed: new EmbedBuilder({
@@ -775,23 +671,124 @@ ${showEta ? `**ETA:** <t:${Math.floor(Date.now()/1000)+(status?.wait_time ?? 0)}
                             })
                         };
                     }
-                }) || [];
-                if(!precheck) clearInterval(inter);
-
-                const image_map = await Promise.all(image_map_r)
-                const embeds = image_map.map(i => i.embed)
-                if(ctx.client.config.advanced?.dev) embeds.at(-1)?.setFooter({text: `Generation ID ${generation_start!.id}`})
-                const files = image_map.filter(i => i.attachment !== null).map(i => i.attachment!) as AttachmentBuilder[]
-                if(img_data) files.push(new AttachmentBuilder(img_data, {name: "original.webp"}))
-                let components = [{type: 1, components: [regenerate_btn, delete_btn]}]
-                if(ctx.client.config.generate?.user_restrictions?.allow_rating && (generation_data.shared ?? true) && files.length === 1) {
-                    components = [...generateButtons(generation_start!.id!), ...components] as { type: number; components: Array<any> }[]
+                    
+                    // Determine if this is a video based on generation data
+                    const generation = g as GenerationStable;
+                    const isVideo = generation.media_type === 'video' || generation.form === 'video' || generation.type === 'video';
+                    const fileExtension = isVideo ? '.mp4' : '.webp';
+                    const mediaType = isVideo ? 'video' : 'image';
+                    const contentType = isVideo ? 'Video' : 'Image';
+                    
+                    console.log(`Processing ${mediaType} data for generation ${g.id}`);
+                    
+                    // Check if it's a valid URL
+                    let isValidUrl = false;
+                    try {
+                        new URL(g.img);
+                        isValidUrl = true;
+                        console.log(`${mediaType} data appears to be a valid URL`);
+                    } catch (e) {
+                        console.log(`${mediaType} data is not a valid URL, treating as Base64`);
+                        isValidUrl = false;
+                    }
+                    
+                    let attachment = null;
+                    if (g.img.startsWith('data:')) {
+                        // Standard Base64 media with data: prefix
+                        console.log(`Processing as Base64 ${mediaType} with data: prefix`);
+                        try {
+                            const parts = g.img.split(',');
+                            if (parts.length > 1) {
+                                const buffer = Buffer.from(parts[1] as string, 'base64');
+                                attachment = new AttachmentBuilder(buffer, {name: `${g.seed ?? `${mediaType.toLowerCase()}${i}`}${fileExtension}`});
+                            } else {
+                                throw new Error(`Invalid Base64 format with data: prefix`);
+                            }
+                        } catch (base64Error) {
+                            console.error(`Failed to process Base64 ${mediaType} with prefix:`, base64Error);
+                            throw base64Error;
+                        }
+                    } else if (!isValidUrl) {
+                        // Raw Base64 media without data: prefix
+                        console.log(`Processing as raw Base64 ${mediaType} without data: prefix`);
+                        try {
+                            const buffer = Buffer.from(g.img, 'base64');
+                            attachment = new AttachmentBuilder(buffer, {name: `${g.seed ?? `${mediaType.toLowerCase()}${i}`}${fileExtension}`});
+                        } catch (base64Error) {
+                            console.error(`Failed to process as raw Base64:`, base64Error);
+                            throw base64Error;
+                        }
+                    } else {
+                        // Valid URL media
+                        console.log(`Fetching ${mediaType} URL: ${g.img}`);
+                        try {
+                            const req = await Centra(g.img, "get").timeout(30000).send();
+                            if(ctx.client.config.advanced?.dev) console.log(req);
+                            attachment = new AttachmentBuilder(req.body, {name: `${g.seed ?? `${mediaType.toLowerCase()}${i}`}${fileExtension}`});
+                        } catch (urlError) {
+                            console.error(`Failed to fetch ${mediaType} URL:`, urlError);
+                            // Try with fetch as fallback
+                            try {
+                                console.log('Trying fetch as fallback...');
+                                const response = await fetch(g.img, { 
+                                    signal: AbortSignal.timeout(30000) 
+                                });
+                                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                                const arrayBuffer = await response.arrayBuffer();
+                                attachment = new AttachmentBuilder(Buffer.from(arrayBuffer), {name: `${g.seed ?? `${mediaType.toLowerCase()}${i}`}${fileExtension}`});
+                            } catch (fetchError) {
+                                console.error('Fetch fallback also failed:', fetchError);
+                                // If URL fetch fails, try as base64 as a last resort
+                                if (g.img.length > 100) {
+                                    console.log(`URL fetch failed, trying as Base64 as last resort`);
+                                    try {
+                                        const buffer = Buffer.from(g.img, 'base64');
+                                        attachment = new AttachmentBuilder(buffer, {name: `${g.seed ?? `${mediaType.toLowerCase()}${i}`}${fileExtension}`});
+                                    } catch (fallbackError) {
+                                        console.error('Fallback to Base64 also failed');
+                                        throw urlError;
+                                    }
+                                } else {
+                                    throw urlError;
+                                }
+                            }
+                        }
+                    }
+                    
+                    const embed = new EmbedBuilder({
+                        title: `${contentType} ${i+1}`,
+                        image: {url: `attachment://${g.seed ?? `${mediaType.toLowerCase()}${i}`}${fileExtension}`},
+                        color: Colors.Blue,
+                        description: `${!i ? `**Raw Prompt:** ${ctx.interaction.options.getString("prompt", true)}\n**Processed Prompt:** ${prompt}\n**Style:** \`${style?.name ?? style_raw}\`${style?.type === "category-style" ? ` from category \`${style_raw}\`` : ""}\n**Parameters:** \`${generationParams.width}x${generationParams.height}\` | \`${generationParams.steps} steps\` | \`CFG ${generationParams.cfg_scale}\` | \`${generationParams.sampler_name}\`${g.seed ? ` | \`Seed ${g.seed}\`` : ""}\n**Total Tokens Cost:** \`${images.kudos}\`` : ""}${ctx.client.config.advanced?.dev ? `\n\n**${contentType} ID** ${g.id}` : ""}` || undefined,
+                    });
+                    if(img_data) embed.setThumbnail(`attachment://original.webp`);
+                    return {attachment, embed};
+                } catch (error: unknown) {
+                    console.error(`Error processing media: ${error instanceof Error ? error.message : String(error)}`);
+                    return {
+                        attachment: null,
+                        embed: new EmbedBuilder({
+                            title: `Media ${i+1} (Error)`,
+                            color: Colors.Red,
+                            description: `Failed to load media. ${!i ? `\n**Raw Prompt:** ${ctx.interaction.options.getString("prompt", true)}\n**Processed Prompt:** ${prompt}\n**Style:** \`${style?.name ?? style_raw}\`${style?.type === "category-style" ? ` from category \`${style_raw}\`` : ""}\n**Total Tokens Cost:** \`${images.kudos}\`` : ""}`,
+                        })
+                    };
                 }
-                await message.edit({content: `Generation finished\n\n**A new view is available, check it out by enabling \`result_structure_v2_enabled\` in the bots config**`, components, embeds, files});
-                if(party) await handlePartySubmit()
-                return null
-            } 
-        }
+            }) || [];
+            
+            const image_map = await Promise.all(image_map_r)
+            const embeds = image_map.map(i => i.embed)
+            if(ctx.client.config.advanced?.dev) embeds.at(-1)?.setFooter({text: `Generation ID ${generation_start!.id}`})
+            const files = image_map.filter(i => i.attachment !== null).map(i => i.attachment!) as AttachmentBuilder[]
+            if(img_data) files.push(new AttachmentBuilder(img_data, {name: "original.webp"}))
+            let components = [{type: 1, components: [regenerate_btn, delete_btn]}]
+            if(ctx.client.config.generate?.user_restrictions?.allow_rating && (generation_data.shared ?? true) && files.length === 1) {
+                components = [...generateButtons(generation_start!.id!), ...components] as { type: number; components: Array<any> }[]
+            }
+            await message.edit({content: `Generation finished\n\n**A new view is available, check it out by enabling \`result_structure_v2_enabled\` in the bots config**`, components, embeds, files});
+            if(party) await handlePartySubmit()
+            return null
+        }        
 
         async function handlePartySubmit() {
             if(ctx.client.config.advanced?.dev) console.log(party)
