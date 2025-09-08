@@ -660,22 +660,34 @@ ${!status.is_possible ? "**Request can not be fulfilled with current amount of w
                 const images = await ctx.ai_horde_manager.getImageGenerationStatus(generation_start!.id!)
 
                 if(ctx.client.config.advanced?.result_structure_v2_enabled ?? true) {
+                    // Check if this is a video response
+                    const isVideoResponse = images.generations?.some(g => 
+                        g.media_type === 'video' || g.form === 'video' || g.type === 'video'
+                    ) || false;
+                    
                     const image_map_r = images.generations?.map(async g => {
                         try {
                             if (!g.img || typeof g.img !== 'string') {
-                                console.error(`Invalid image data received: ${g.img}`);
+                                console.error(`Invalid media data received: ${g.img}`);
                                 return {attachment: null, generation: g};
                             }
                             
-                            // Log the image data type and check if it's a valid URL
+                            // Determine if this is a video based on generation data or response type
+                            const isVideo = g.media_type === 'video' || g.form === 'video' || g.type === 'video' || isVideoResponse;
+                            const fileExtension = isVideo ? '.mp4' : '.webp';
+                            const mediaType = isVideo ? 'video' : 'image';
+                            
+                            console.log(`Processing ${mediaType} data for generation ${g.id}`);
+                            
+                            // Log the media data type and check if it's a valid URL
                             let isValidUrl = false;
                             try {
                                 // Just check if the URL is valid, don't actually fetch it yet
                                 new URL(g.img);
                                 isValidUrl = true;
-                                console.log(`Image data appears to be a valid URL`);
+                                console.log(`${mediaType} data appears to be a valid URL`);
                             } catch (e) {
-                                console.log(`Image data is not a valid URL, treating as Base64`);
+                                console.log(`${mediaType} data is not a valid URL, treating as Base64`);
                                 isValidUrl = false;
                             }
                             
@@ -683,32 +695,32 @@ ${!status.is_possible ? "**Request can not be fulfilled with current amount of w
                             if (g.censored) {
                                 return {attachment: null, generation: g};
                             } else if (g.img.startsWith('data:')) {
-                                // Standard Base64 image with data: prefix
-                                console.log('Processing as Base64 image with data: prefix');
+                                // Standard Base64 media with data: prefix
+                                console.log(`Processing as Base64 ${mediaType} with data: prefix`);
                                 const parts = g.img.split(',');
                                 if (parts.length > 1) {
                                     const buffer = Buffer.from(parts[1] as string, 'base64');
-                                    attachment = new AttachmentBuilder(buffer, {name: `${g.id}.webp`});
+                                    attachment = new AttachmentBuilder(buffer, {name: `${g.id}${fileExtension}`});
                                 } else {
-                                    throw new Error('Invalid Base64 format with data: prefix');
+                                    throw new Error(`Invalid Base64 format with data: prefix`);
                                 }
                             } else if (!isValidUrl) {
-                                // Raw Base64 image without data: prefix
-                                console.log('Processing as raw Base64 image without data: prefix');
+                                // Raw Base64 media without data: prefix
+                                console.log(`Processing as raw Base64 ${mediaType} without data: prefix`);
                                 try {
                                     const buffer = Buffer.from(g.img, 'base64');
-                                    attachment = new AttachmentBuilder(buffer, {name: `${g.id}.webp`});
+                                    attachment = new AttachmentBuilder(buffer, {name: `${g.id}${fileExtension}`});
                                 } catch (base64Error) {
-                                    console.error('Failed to process as raw Base64:', base64Error);
+                                    console.error(`Failed to process as raw Base64:`, base64Error);
                                 }
                             } else {
-                                // Valid URL image
-                                console.log(`Fetching URL: ${g.img}`);
+                                // Valid URL media
+                                console.log(`Fetching ${mediaType} URL: ${g.img}`);
                                 try {
                                     const req = await Centra(g.img, "GET").timeout(30000).send();
-                                    attachment = new AttachmentBuilder(req.body, {name: `${g.id}.webp`});
+                                    attachment = new AttachmentBuilder(req.body, {name: `${g.id}${fileExtension}`});
                                 } catch (urlError) {
-                                    console.error('Failed to fetch image URL:', urlError);
+                                    console.error(`Failed to fetch ${mediaType} URL:`, urlError);
                                     // Try with fetch as fallback
                                     try {
                                         console.log('Trying fetch as fallback...');
@@ -717,15 +729,15 @@ ${!status.is_possible ? "**Request can not be fulfilled with current amount of w
                                         });
                                         if (!response.ok) throw new Error(`HTTP ${response.status}`);
                                         const arrayBuffer = await response.arrayBuffer();
-                                        attachment = new AttachmentBuilder(Buffer.from(arrayBuffer), {name: `${g.id}.webp`});
+                                        attachment = new AttachmentBuilder(Buffer.from(arrayBuffer), {name: `${g.id}${fileExtension}`});
                                     } catch (fetchError) {
                                         console.error('Fetch fallback also failed:', fetchError);
                                         // If URL fetch fails, try as base64 as a last resort
                                         if (g.img.length > 100) {
-                                            console.log('URL fetch failed, trying as Base64 as last resort');
+                                            console.log(`URL fetch failed, trying as Base64 as last resort`);
                                             try {
                                                 const buffer = Buffer.from(g.img, 'base64');
-                                                attachment = new AttachmentBuilder(buffer, {name: `${g.id}.webp`});
+                                                attachment = new AttachmentBuilder(buffer, {name: `${g.id}${fileExtension}`});
                                             } catch (fallbackError) {
                                                 console.error('Fallback to Base64 also failed:', fallbackError);
                                             }
@@ -736,7 +748,7 @@ ${!status.is_possible ? "**Request can not be fulfilled with current amount of w
                             
                             return {attachment, generation: g};
                         } catch (error: unknown) {
-                            console.error(`Error processing image: ${error instanceof Error ? error.message : String(error)}`);
+                            console.error(`Error processing media: ${error instanceof Error ? error.message : String(error)}`);
                             return {attachment: null, generation: g};
                         }
                     }) || [];
@@ -746,10 +758,15 @@ ${!status.is_possible ? "**Request can not be fulfilled with current amount of w
                     const files = image_map.filter(i => i.attachment !== null).map(i => i.attachment!) as AttachmentBuilder[];
                     if(img_data && image_map.length < 10) files.push(new AttachmentBuilder(img_data, {name: "original.webp"}));
                     let components = [{type: 1, components: [regenerate_btn, delete_btn]}]
+                    
+                    // Determine content type for display
+                    const contentType = isVideoResponse ? "video" : "image";
+                    const contentTypePlural = isVideoResponse ? "videos" : "images";
+                    
                     const embeds = [
                         new EmbedBuilder({
-                            title: "Generation Finished",
-                            description: `**Prompt** ${prompt}\n**Style** ${style_raw}\n**Credits Consumed** \`${images.kudos}\`${image_map.length !== amount ? "\nCensored Images are not displayed" : ""}`,
+                            title: `${contentType.charAt(0).toUpperCase() + contentType.slice(1)} Generation Finished`,
+                            description: `**Prompt** ${prompt}\n**Style** ${style_raw}\n**Credits Consumed** \`${images.kudos}\`${image_map.length !== amount ? `\nCensored ${contentTypePlural} are not displayed` : ""}`,
                             color: Colors.Blue,
                             footer: {text: `Generation ID ${generation_start!.id}`},
                             thumbnail: img_data && image_map.length < 10 ? {url: "attachment://original.webp"} : img_data ? {url: img!.url} : undefined
@@ -766,69 +783,77 @@ ${!status.is_possible ? "**Request can not be fulfilled with current amount of w
                 const image_map_r = images.generations?.map(async (g, i) => {
                     try {
                         if (!g.img || typeof g.img !== 'string') {
-                            console.error(`Invalid image data received: ${g.img}`);
+                            console.error(`Invalid media data received: ${g.img}`);
                             return {
                                 attachment: null,
                                 embed: new EmbedBuilder({
-                                    title: `Image ${i+1} (Error)`,
+                                    title: `Media ${i+1} (Error)`,
                                     color: Colors.Red,
-                                    description: `Failed to load image. ${!i ? `\n**Prompt:** ${prompt}\n**Style:** ${style_raw}\n**Credits Consumed** \`${images.kudos}\`` : ""}`,
+                                    description: `Failed to load media. ${!i ? `\n**Prompt:** ${prompt}\n**Style:** ${style_raw}\n**Credits Consumed** \`${images.kudos}\`` : ""}`,
                                 })
                             };
                         }
+                        
+                        // Determine if this is a video based on generation data
+                        const isVideo = g.media_type === 'video' || g.form === 'video' || g.type === 'video';
+                        const fileExtension = isVideo ? '.mp4' : '.webp';
+                        const mediaType = isVideo ? 'video' : 'image';
+                        const contentType = isVideo ? 'Video' : 'Image';
+                        
+                        console.log(`Processing ${mediaType} data for generation ${g.id}`);
                         
                         // Check if it's a valid URL
                         let isValidUrl = false;
                         try {
                             new URL(g.img);
                             isValidUrl = true;
-                            console.log(`Image data appears to be a valid URL`);
+                            console.log(`${mediaType} data appears to be a valid URL`);
                         } catch (e) {
-                            console.log(`Image data is not a valid URL, treating as Base64`);
+                            console.log(`${mediaType} data is not a valid URL, treating as Base64`);
                             isValidUrl = false;
                         }
                         
                         let attachment = null;
                         if (g.img.startsWith('data:')) {
-                            // Standard Base64 image with data: prefix
-                            console.log('Processing as Base64 image with data: prefix');
+                            // Standard Base64 media with data: prefix
+                            console.log(`Processing as Base64 ${mediaType} with data: prefix`);
                             try {
                                 const parts = g.img.split(',');
                                 if (parts.length > 1) {
                                     const buffer = Buffer.from(parts[1] as string, 'base64');
-                                    attachment = new AttachmentBuilder(buffer, {name: `${g.seed ?? `image${i}`}.webp`});
+                                    attachment = new AttachmentBuilder(buffer, {name: `${g.seed ?? `${mediaType.toLowerCase()}${i}`}${fileExtension}`});
                                 } else {
-                                    throw new Error('Invalid Base64 format with data: prefix');
+                                    throw new Error(`Invalid Base64 format with data: prefix`);
                                 }
                             } catch (base64Error) {
-                                console.error('Failed to process Base64 image with prefix:', base64Error);
+                                console.error(`Failed to process Base64 ${mediaType} with prefix:`, base64Error);
                                 throw base64Error;
                             }
                         } else if (!isValidUrl) {
-                            // Raw Base64 image without data: prefix
-                            console.log('Processing as raw Base64 image without data: prefix');
+                            // Raw Base64 media without data: prefix
+                            console.log(`Processing as raw Base64 ${mediaType} without data: prefix`);
                             try {
                                 const buffer = Buffer.from(g.img, 'base64');
-                                attachment = new AttachmentBuilder(buffer, {name: `${g.seed ?? `image${i}`}.webp`});
+                                attachment = new AttachmentBuilder(buffer, {name: `${g.seed ?? `${mediaType.toLowerCase()}${i}`}${fileExtension}`});
                             } catch (base64Error) {
-                                console.error('Failed to process as raw Base64:', base64Error);
+                                console.error(`Failed to process as raw Base64:`, base64Error);
                                 throw base64Error;
                             }
                         } else {
-                            // Valid URL image
-                            console.log(`Fetching URL: ${g.img}`);
+                            // Valid URL media
+                            console.log(`Fetching ${mediaType} URL: ${g.img}`);
                             try {
                                 const req = await Centra(g.img, "get").send();
                                 if(ctx.client.config.advanced?.dev) console.log(req);
-                                attachment = new AttachmentBuilder(req.body, {name: `${g.seed ?? `image${i}`}.webp`});
+                                attachment = new AttachmentBuilder(req.body, {name: `${g.seed ?? `${mediaType.toLowerCase()}${i}`}${fileExtension}`});
                             } catch (urlError) {
-                                console.error('Failed to fetch image URL:', urlError);
+                                console.error(`Failed to fetch ${mediaType} URL:`, urlError);
                                 // If URL fetch fails, try as base64 as a last resort
                                 if (g.img.length > 100) {
-                                    console.log('URL fetch failed, trying as Base64 as last resort');
+                                    console.log(`URL fetch failed, trying as Base64 as last resort`);
                                     try {
                                         const buffer = Buffer.from(g.img, 'base64');
-                                        attachment = new AttachmentBuilder(buffer, {name: `${g.seed ?? `image${i}`}.webp`});
+                                        attachment = new AttachmentBuilder(buffer, {name: `${g.seed ?? `${mediaType.toLowerCase()}${i}`}${fileExtension}`});
                                     } catch (fallbackError) {
                                         console.error('Fallback to Base64 also failed');
                                         throw urlError;
@@ -840,21 +865,21 @@ ${!status.is_possible ? "**Request can not be fulfilled with current amount of w
                         }
                         
                         const embed = new EmbedBuilder({
-                            title: `Image ${i+1}`,
-                            image: {url: `attachment://${g.seed ?? `image${i}`}.webp`},
+                            title: `${contentType} ${i+1}`,
+                            image: {url: `attachment://${g.seed ?? `${mediaType.toLowerCase()}${i}`}${fileExtension}`},
                             color: Colors.Blue,
-                            description: `**Seed:** ${g.seed}\n**Model:** ${g.model}\n**Generated by** ${g.worker_name}\n(\`${g.worker_id}\`)${!i ? `\n**Prompt:** ${prompt}\n**Total Kudos Cost:** \`${images.kudos}\`` : ""}${ctx.client.config.advanced?.dev ? `\n\n**Image ID** ${g.id}` : ""}`,
+                            description: `**Seed:** ${g.seed}\n**Model:** ${g.model}\n**Generated by** ${g.worker_name}\n(\`${g.worker_id}\`)${!i ? `\n**Prompt:** ${prompt}\n**Total Kudos Cost:** \`${images.kudos}\`` : ""}${ctx.client.config.advanced?.dev ? `\n\n**${contentType} ID** ${g.id}` : ""}`,
                         });
                         if(img_data) embed.setThumbnail(`attachment://original.webp`);
                         return {attachment, embed};
                     } catch (error: unknown) {
-                        console.error(`Error processing image: ${error instanceof Error ? error.message : String(error)}`);
+                        console.error(`Error processing media: ${error instanceof Error ? error.message : String(error)}`);
                         return {
                             attachment: null,
                             embed: new EmbedBuilder({
-                                title: `Image ${i+1} (Error)`,
+                                title: `Media ${i+1} (Error)`,
                                 color: Colors.Red,
-                                description: `Failed to load image. ${!i ? `\n**Prompt:** ${prompt}\n**Style:** ${style_raw}\n**Credits Consumed** \`${images.kudos}\`` : ""}`,
+                                description: `Failed to load media. ${!i ? `\n**Prompt:** ${prompt}\n**Style:** ${style_raw}\n**Credits Consumed** \`${images.kudos}\`` : ""}`,
                             })
                         };
                     }
