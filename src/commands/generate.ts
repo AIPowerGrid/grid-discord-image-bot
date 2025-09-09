@@ -550,15 +550,20 @@ ${showEta ? `**ETA:** <t:${Math.floor(Date.now()/1000)+(status?.wait_time ?? 0)}
                     g.filename && g.filename.toLowerCase().includes('.mp4')
                 ) || false;
                 
-                // Additional check: assume all WebP URLs are animated videos
-                const hasWebpUrl = generations?.some(g => 
-                    g.img && g.img.toLowerCase().includes('.webp')
-                ) || false;
+                // Additional check: detect video content from base64 or WebP URLs
+                const hasVideoContent = generations?.some(g => {
+                    if (!g.img) return false;
+                    // Check for WebP URLs
+                    if (g.img.toLowerCase().includes('.webp')) return true;
+                    // Check for base64 encoded MP4 data (starts with MP4 file signature)
+                    if (g.img.startsWith('AAAAIGZ0eXBpc29tAAA') || g.img.startsWith('AAAAFGZ0eXBpc29t')) return true;
+                    return false;
+                }) || false;
                 
                 console.log('[DEBUG] isVideoResponse:', isVideoResponse);
                 console.log('[DEBUG] hasVideoFilename:', hasVideoFilename);
-                console.log('[DEBUG] hasWebpUrl:', hasWebpUrl);
-                console.log('[DEBUG] Final video detection:', isVideoResponse || hasVideoFilename || hasWebpUrl);
+                console.log('[DEBUG] hasVideoContent:', hasVideoContent);
+                console.log('[DEBUG] Final video detection:', isVideoResponse || hasVideoFilename || hasVideoContent);
                 
                 const image_map_r = generations?.map(async g => {
                     try {
@@ -568,7 +573,7 @@ ${showEta ? `**ETA:** <t:${Math.floor(Date.now()/1000)+(status?.wait_time ?? 0)}
                         }
                         
                         // Determine if this is a video based on generation data or response type
-                        const isVideo = g.media_type === 'video' || g.form === 'video' || g.type === 'video' || isVideoResponse || hasVideoFilename || hasWebpUrl;
+                        const isVideo = g.media_type === 'video' || g.form === 'video' || g.type === 'video' || isVideoResponse || hasVideoFilename || hasVideoContent;
                         const fileExtension = '.webp'; // Keep as WebP - assume all are animated
                         const mediaType = isVideo ? 'video' : 'image';
                         
@@ -665,8 +670,8 @@ ${showEta ? `**ETA:** <t:${Math.floor(Date.now()/1000)+(status?.wait_time ?? 0)}
                 let components = [{type: 1, components: [regenerate_btn, delete_btn]}]
                 
                 // Determine content type for display
-                const contentType = (isVideoResponse || hasVideoFilename || hasWebpUrl) ? "video" : "image";
-                const contentTypePlural = (isVideoResponse || hasVideoFilename || hasWebpUrl) ? "videos" : "images";
+                const contentType = (isVideoResponse || hasVideoFilename || hasVideoContent) ? "video" : "image";
+                const contentTypePlural = (isVideoResponse || hasVideoFilename || hasVideoContent) ? "videos" : "images";
                 
                 const embeds = [
                     new EmbedBuilder({

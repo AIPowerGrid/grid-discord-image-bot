@@ -308,15 +308,20 @@ ${!status.is_possible ? "**Request can not be fulfilled with current amount of w
                             g.filename && g.filename.toLowerCase().includes('.mp4')
                         ) || false;
                         
-                        // Additional check: assume all WebP URLs are animated videos
-                        const hasWebpUrl = generations?.some(g => 
-                            g.img && g.img.toLowerCase().includes('.webp')
-                        ) || false;
+                        // Additional check: detect video content from base64 or WebP URLs
+                        const hasVideoContent = generations?.some(g => {
+                            if (!g.img) return false;
+                            // Check for WebP URLs
+                            if (g.img.toLowerCase().includes('.webp')) return true;
+                            // Check for base64 encoded MP4 data (starts with MP4 file signature)
+                            if (g.img.startsWith('AAAAIGZ0eXBpc29tAAA') || g.img.startsWith('AAAAFGZ0eXBpc29t')) return true;
+                            return false;
+                        }) || false;
                         
                         console.log('[DEBUG] isVideoResponse:', isVideoResponse);
                         console.log('[DEBUG] hasVideoFilename:', hasVideoFilename);
-                        console.log('[DEBUG] hasWebpUrl:', hasWebpUrl);
-                        console.log('[DEBUG] Final video detection:', isVideoResponse || hasVideoFilename || hasWebpUrl);
+                        console.log('[DEBUG] hasVideoContent:', hasVideoContent);
+                        console.log('[DEBUG] Final video detection:', isVideoResponse || hasVideoFilename || hasVideoContent);
                         
                         const image_map_r = generations?.map(async g => {
                             // Check if media URL exists
@@ -396,8 +401,8 @@ ${!status.is_possible ? "**Request can not be fulfilled with current amount of w
                         const image_map = await Promise.all(image_map_r);
                         const files = image_map.filter(i => i.attachment).map(i => i.attachment) as AttachmentBuilder[];
                         
-                        const contentType = (isVideoResponse || hasVideoFilename || hasWebpUrl) ? "video" : "image";
-                        const contentTypePlural = (isVideoResponse || hasVideoFilename || hasWebpUrl) ? "videos" : "images";
+                        const contentType = (isVideoResponse || hasVideoFilename || hasVideoContent) ? "video" : "image";
+                        const contentTypePlural = (isVideoResponse || hasVideoFilename || hasVideoContent) ? "videos" : "images";
                         const resultComponents = [{type: 1, components: [regenerate_btn, delete_btn]}];
                         const resultEmbeds = [
                             new EmbedBuilder({
