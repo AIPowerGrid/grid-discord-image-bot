@@ -550,9 +550,15 @@ ${showEta ? `**ETA:** <t:${Math.floor(Date.now()/1000)+(status?.wait_time ?? 0)}
                     g.filename && g.filename.toLowerCase().includes('.mp4')
                 ) || false;
                 
+                // Additional check: assume all WebP URLs are animated videos
+                const hasWebpUrl = generations?.some(g => 
+                    g.img && g.img.toLowerCase().includes('.webp')
+                ) || false;
+                
                 console.log('[DEBUG] isVideoResponse:', isVideoResponse);
                 console.log('[DEBUG] hasVideoFilename:', hasVideoFilename);
-                console.log('[DEBUG] Final video detection:', isVideoResponse || hasVideoFilename);
+                console.log('[DEBUG] hasWebpUrl:', hasWebpUrl);
+                console.log('[DEBUG] Final video detection:', isVideoResponse || hasVideoFilename || hasWebpUrl);
                 
                 const image_map_r = generations?.map(async g => {
                     try {
@@ -562,7 +568,7 @@ ${showEta ? `**ETA:** <t:${Math.floor(Date.now()/1000)+(status?.wait_time ?? 0)}
                         }
                         
                         // Determine if this is a video based on generation data or response type
-                        const isVideo = g.media_type === 'video' || g.form === 'video' || g.type === 'video' || isVideoResponse || hasVideoFilename;
+                        const isVideo = g.media_type === 'video' || g.form === 'video' || g.type === 'video' || isVideoResponse || hasVideoFilename || hasWebpUrl;
                         const fileExtension = '.webp'; // Keep as WebP - assume all are animated
                         const mediaType = isVideo ? 'video' : 'image';
                         
@@ -659,8 +665,8 @@ ${showEta ? `**ETA:** <t:${Math.floor(Date.now()/1000)+(status?.wait_time ?? 0)}
                 let components = [{type: 1, components: [regenerate_btn, delete_btn]}]
                 
                 // Determine content type for display
-                const contentType = (isVideoResponse || hasVideoFilename) ? "video" : "image";
-                const contentTypePlural = (isVideoResponse || hasVideoFilename) ? "videos" : "images";
+                const contentType = (isVideoResponse || hasVideoFilename || hasWebpUrl) ? "video" : "image";
+                const contentTypePlural = (isVideoResponse || hasVideoFilename || hasWebpUrl) ? "videos" : "images";
                 
                 const embeds = [
                     new EmbedBuilder({
