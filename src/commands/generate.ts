@@ -574,7 +574,20 @@ ${showEta ? `**ETA:** <t:${Math.floor(Date.now()/1000)+(status?.wait_time ?? 0)}
                         
                         // Determine if this is a video based on generation data or response type
                         const isVideo = g.media_type === 'video' || g.form === 'video' || g.type === 'video' || isVideoResponse || hasVideoFilename || hasVideoContent;
-                        const fileExtension = '.webp'; // Keep as WebP - assume all are animated
+                        
+                        // Determine file extension based on content type and data format
+                        let fileExtension = '.webp'; // Default for images
+                        if (isVideo) {
+                            // Check if it's base64 MP4 data
+                            if (g.img && (g.img.startsWith('AAAAIGZ0eXBpc29tAAA') || g.img.startsWith('AAAAFGZ0eXBpc29t'))) {
+                                fileExtension = '.mp4';
+                            } else if (g.img && g.img.toLowerCase().includes('.webp')) {
+                                fileExtension = '.webp'; // Animated WebP
+                            } else {
+                                fileExtension = '.mp4'; // Default for video
+                            }
+                        }
+                        
                         const mediaType = isVideo ? 'video' : 'image';
                         
                         console.log(`[DEBUG] Content detected as ${mediaType}, isVideo=${isVideo}, treating WebP as animated`);
