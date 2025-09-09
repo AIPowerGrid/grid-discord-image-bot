@@ -550,13 +550,13 @@ ${showEta ? `**ETA:** <t:${Math.floor(Date.now()/1000)+(status?.wait_time ?? 0)}
                     g.filename && g.filename.toLowerCase().includes('.mp4')
                 ) || false;
                 
-                // Additional check: detect video content from base64 or WebP URLs
+                // Additional check: detect video content from base64 MP4 data or WebP in video channels
                 const hasVideoContent = generations?.some(g => {
                     if (!g.img) return false;
-                    // Check for WebP URLs
-                    if (g.img.toLowerCase().includes('.webp')) return true;
                     // Check for base64 encoded MP4 data (starts with MP4 file signature)
                     if (g.img.startsWith('AAAAIGZ0eXBpc29tAAA') || g.img.startsWith('AAAAFGZ0eXBpc29t')) return true;
+                    // Only treat WebP as video if we're in a video channel context
+                    if (isVideoChannel && g.img.toLowerCase().includes('.webp')) return true;
                     return false;
                 }) || false;
                 
