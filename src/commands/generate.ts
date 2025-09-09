@@ -677,15 +677,23 @@ ${showEta ? `**ETA:** <t:${Math.floor(Date.now()/1000)+(status?.wait_time ?? 0)}
                 }
                 console.log(`[DEBUG] About to send response with contentType: ${contentType}`);
                 
-                // Special handling for video content
-                if (contentType === "video" && files.length > 0) {
-                    console.log(`[DEBUG] Using video-optimized response for ${contentType}`);
+                // Special handling for video content - use direct URL embedding
+                if (contentType === "video" && generations && generations.length > 0 && generations[0]?.img) {
+                    console.log(`[DEBUG] Using video-optimized response with direct URL for ${contentType}`);
+                    
+                    const videoEmbed = new EmbedBuilder({
+                        title: `Video Generation Finished`,
+                        description: `**Prompt:** ${ctx.interaction.options.getString("prompt", true)}\n**Style:** \`${style?.name ?? style_raw}\`\n**Parameters:** \`${generationParams.width}x${generationParams.height}\` | \`${generationParams.steps} steps\` | \`CFG ${generationParams.cfg_scale}\` | \`${generationParams.sampler_name}\`\n**Credits Consumed:** \`${images.kudos}\``,
+                        image: { url: generations[0]!.img! }, // Use direct URL for animated WebP
+                        color: Colors.Blue,
+                        footer: {text: `Generation ID ${generation_start!.id}`}
+                    });
                     
                     await message.edit({
-                        content: `**${contentType.charAt(0).toUpperCase() + contentType.slice(1)} Generation Finished**\n**Prompt:** ${ctx.interaction.options.getString("prompt", true)}\n**Style:** \`${style?.name ?? style_raw}\``, 
+                        content: null,
                         components, 
-                        embeds: [], 
-                        files
+                        embeds: [videoEmbed], 
+                        files: []
                     });
                 } else {
                     // Standard response for images
