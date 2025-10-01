@@ -197,6 +197,14 @@ ${showInitialEta ? `**ETA:** <t:${Math.floor(Date.now()/1000)+(start_status?.wai
                 emoji: { name: "✏️" }
             };
             
+            const animate_btn: InteractionButtonComponentData = {
+                label: "Animate",
+                customId: `animate_${ctx.interaction.user.id}_${prompt.substring(0, Math.max(0, 90 - ctx.interaction.user.id.length - 8))}`,
+                style: 3,
+                type: 2,
+                emoji: { name: "🎬" }
+            };
+            
             const components = [{type: 1, components: [btn.toJSON()]}];
             
             // Send the initial reply
@@ -354,7 +362,7 @@ ${showEta ? `**ETA:** <t:${Math.floor(Date.now()/1000)+(status?.wait_time ?? 0)}
                             const image_map = await Promise.all(image_map_r);
                             const files = image_map.filter(i => i.attachment).map(i => i.attachment) as AttachmentBuilder[];
                             
-                            const resultComponents = [{type: 1, components: [regenerate_btn, edit_btn, delete_btn]}];
+                            const resultComponents = [{type: 1, components: [regenerate_btn, edit_btn, animate_btn, delete_btn]}];
                             const resultEmbeds = [
                                 new EmbedBuilder({
                                     title: "Generation Finished",
@@ -444,7 +452,7 @@ ${showEta ? `**ETA:** <t:${Math.floor(Date.now()/1000)+(status?.wait_time ?? 0)}
                             
                             await ctx.interaction.editReply({
                                 content: null, 
-                                components: [{type: 1, components: [regenerate_btn, edit_btn, delete_btn]}], 
+                                components: [{type: 1, components: [regenerate_btn, edit_btn, animate_btn, delete_btn]}], 
                                 embeds: resultEmbeds, 
                                 files
                             }).catch(console.error);

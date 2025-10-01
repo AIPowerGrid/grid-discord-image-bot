@@ -373,6 +373,14 @@ ${showInitialEta ? `**ETA:** <t:${Math.floor(Date.now()/1000)+(start_status?.wai
             type: 2,
             emoji: { name: "🎲" }
         }
+        
+        const animate_btn: InteractionButtonComponentData = {
+            label: "Animate",
+            customId: `animate_${ctx.interaction.user.id}_${ctx.interaction.options.getString("prompt", true).substring(0, Math.max(0, 90 - ctx.interaction.user.id.length - 8))}`,
+            style: 3,
+            type: 2,
+            emoji: { name: "🎬" }
+        }
 
         const components = [{type: 1, components: [btn.toJSON()]}]
 
@@ -680,7 +688,11 @@ ${showEta ? `**ETA:** <t:${Math.floor(Date.now()/1000)+(status?.wait_time ?? 0)}
                 const image_map = await Promise.all(image_map_r)
                 const files = image_map.filter(i => i.attachment !== null).map(i => i.attachment!) as AttachmentBuilder[]
                 if(img_data && image_map.length < 10) files.push(new AttachmentBuilder(img_data, {name: "original.webp"}))
-                let components = [{type: 1, components: [regenerate_btn, delete_btn]}]
+                // Only add animate button for image results (not videos)
+                const isImageResult = !(isVideoResponse || hasVideoFilename || hasVideoContent);
+                let components = isImageResult 
+                    ? [{type: 1, components: [regenerate_btn, animate_btn, delete_btn]}]
+                    : [{type: 1, components: [regenerate_btn, delete_btn]}]
                 
                 // Determine content type for display
                 const contentType = (isVideoResponse || hasVideoFilename || hasVideoContent) ? "video" : "image";
