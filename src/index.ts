@@ -188,9 +188,50 @@ client.on("messageCreate", async (message) => {
     // Customize message based on channel type (video or image)
     const contentType = isVideoChannel ? "video" : "image";
 
-    await message.reply({
-        content: `💡 You can use \`/generate prompt:${message.content}\` to create a ${contentType}. Would you like me to generate a ${contentType} from your message?`,
-        components: [{
+    // Create components based on channel type
+    let components: any[] = [];
+    
+    if (isVideoChannel && channelConfig?.allowed_styles && channelConfig.allowed_styles.length > 1) {
+        // For video channels with multiple styles, create buttons for each style
+        const videoStyleButtons = channelConfig.allowed_styles.slice(0, 5).map((styleName: string) => {
+            const buttonLabel = styleName.includes("5b") ? "5B Model" :
+                              styleName.includes("14b") ? "14B Model" :  
+                              styleName.includes("quality") ? "HQ Model" :
+                              styleName.includes("short") ? "Short" :
+                              styleName.includes("portrait") ? "Portrait" :
+                              styleName.includes("square") ? "Square" :
+                              styleName.includes("widescreen") ? "Widescreen" :
+                              styleName.replace("wan2-", "").replace("-video", "");
+            
+            return {
+                type: 2,
+                style: 1,
+                custom_id: `quickgenerate_style:${styleName}_${message.content.substring(0, 50)}`,
+                label: buttonLabel
+            };
+        });
+        
+        // Add Advanced Settings button
+        videoStyleButtons.push({
+            type: 2,
+            style: 2, // Secondary style
+            custom_id: `video_advanced_${message.content.substring(0, 50)}`,
+            label: "⚙️ Advanced Settings"
+        });
+        
+        // Split into rows of 5 buttons max
+        const rows = [];
+        for (let i = 0; i < videoStyleButtons.length; i += 5) {
+            rows.push({
+                type: 1,
+                components: videoStyleButtons.slice(i, i + 5)
+            });
+        }
+        components = rows;
+        
+    } else {
+        // Default single button for image channels or video channels with one style
+        components = [{
             type: 1,
             components: [{
                 type: 2,
@@ -198,7 +239,12 @@ client.on("messageCreate", async (message) => {
                 custom_id: `quickgenerate_${message.content.substring(0, 80)}`,
                 label: `Generate this ${contentType}`
             }]
-        }]
+        }];
+    }
+
+    await message.reply({
+        content: `💡 You can use \`/generate prompt:${message.content}\` to create a ${contentType}. ${isVideoChannel && channelConfig?.allowed_styles && channelConfig.allowed_styles.length > 1 ? 'Choose your video model:' : `Would you like me to generate a ${contentType} from your message?`}`,
+        components
     });
 });
 
