@@ -269,7 +269,7 @@
         "video_length": 121,
         "fps": 24,
         "cfg_scale": 5,
-        "sampler_name": "uni_pc"
+        "sampler_name": "k_euler"
     },
     "wan2-5b-video-short": {
         "prompt": "{p}{np}",
@@ -280,7 +280,7 @@
         "video_length": 81,
         "fps": 24,
         "cfg_scale": 5,
-        "sampler_name": "uni_pc"
+        "sampler_name": "k_euler"
     },
     "wan2-5b-video-portrait": {
         "prompt": "{p}{np}",
@@ -291,7 +291,7 @@
         "video_length": 121,
         "fps": 24,
         "cfg_scale": 5,
-        "sampler_name": "uni_pc"
+        "sampler_name": "k_euler"
     },
     "wan2-5b-video-square": {
         "prompt": "{p}{np}",
@@ -302,7 +302,7 @@
         "video_length": 121,
         "fps": 24,
         "cfg_scale": 5,
-        "sampler_name": "uni_pc"
+        "sampler_name": "k_euler"
     },
     "wan2-5b-video-widescreen": {
         "prompt": "{p}{np}",
@@ -313,7 +313,7 @@
         "video_length": 121,
         "fps": 24,
         "cfg_scale": 5,
-        "sampler_name": "uni_pc"
+        "sampler_name": "k_euler"
     },
     "wan2-14b-video-quality": {
         "prompt": "{p}{np}",
