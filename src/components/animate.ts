@@ -95,8 +95,8 @@ export default class extends Component {
                 tiling: false,
                 cfg_scale: style.cfg_scale,
                 steps: style.steps,
-                video_length: (style as any).video_length || 121,
-                fps: (style as any).fps || 24
+                video_length: (style as any).length || (style as any).video_length || 81,
+                fps: (style as any).fps || 16
             };
             
             const generation_data: ImageGenerationInput = {

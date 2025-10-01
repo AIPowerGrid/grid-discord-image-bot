@@ -74,7 +74,12 @@ export default class extends Component {
                 loras: style.loras,
                 steps: style.steps,
                 tis: style.tis,
-                hires_fix: style.hires_fix
+                hires_fix: style.hires_fix,
+                // Add video parameters for video channels
+                ...(isVideoChannel && {
+                    video_length: (style as any).length || (style as any).video_length || 81,
+                    fps: (style as any).fps || 16
+                })
             };
             
             const generation_data = {
@@ -89,6 +94,18 @@ export default class extends Component {
                 r2: true,
                 shared: false
             };
+            
+            // Debug: Log generation parameters for video channels
+            if (isVideoChannel) {
+                console.log(`[DEBUG] Video generation request - Model: ${style.model}, Params:`, {
+                    width: generationParams.width,
+                    height: generationParams.height,
+                    video_length: (generationParams as any).video_length,
+                    fps: (generationParams as any).fps,
+                    steps: generationParams.steps,
+                    cfg_scale: generationParams.cfg_scale
+                });
+            }
             
             // Start the generation
             const generation_start = await ctx.ai_horde_manager.postAsyncImageGenerate(generation_data, {token})
