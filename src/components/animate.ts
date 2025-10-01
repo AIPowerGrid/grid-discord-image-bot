@@ -1,6 +1,7 @@
 import { AttachmentBuilder, ButtonBuilder, Colors, ComponentType, EmbedBuilder, InteractionButtonComponentData } from "discord.js";
 import { Component } from "../classes/component";
 import { ComponentContext } from "../classes/componentContext";
+import { ImageGenerationInput } from "aipg_horde";
 import Centra from "centra";
 
 export default class extends Component {
@@ -98,7 +99,7 @@ export default class extends Component {
                 fps: (style as any).fps || 24
             };
             
-            const generation_data = {
+            const generation_data: ImageGenerationInput = {
                 prompt: formattedPrompt,
                 params: generationParams,
                 replacement_filter: ctx.client.config.generate?.replacement_filter,
@@ -108,7 +109,7 @@ export default class extends Component {
                 workers: ctx.client.config.generate?.workers,
                 models: style.model ? [style.model] : undefined,
                 source_image: img_data.toString("base64"),
-                source_processing: "img2img",
+                source_processing: "img2img" as const,
                 r2: true,
                 shared: false
             };
