@@ -251,7 +251,7 @@
     },
     "wan2.2-t2v-a14b": {
         "prompt": "{p}{np}",
-        "model": "wan2.2-t2v-a14b",
+        "model": "wan2_2_t2v_14b",
         "steps": 4,
         "cfg_scale": 1,
         "sampler_name": "k_euler",
@@ -262,7 +262,7 @@
     },
     "wan2-5b-video": {
         "prompt": "{p}{np}",
-        "model": "wan2.2_ti2v_5B",
+        "model": "wan2_2_5B_ti2v",
         "steps": 20,
         "width": 1280,
         "height": 704,
@@ -273,7 +273,7 @@
     },
     "wan2-5b-video-short": {
         "prompt": "{p}{np}",
-        "model": "wan2.2_ti2v_5B",
+        "model": "wan2_2_5B_ti2v",
         "steps": 20,
         "width": 1280,
         "height": 704,
@@ -284,7 +284,7 @@
     },
     "wan2-5b-video-portrait": {
         "prompt": "{p}{np}",
-        "model": "wan2.2_ti2v_5B",
+        "model": "wan2_2_5B_ti2v",
         "steps": 20,
         "width": 704,
         "height": 1280,
@@ -295,7 +295,7 @@
     },
     "wan2-5b-video-square": {
         "prompt": "{p}{np}",
-        "model": "wan2.2_ti2v_5B",
+        "model": "wan2_2_5B_ti2v",
         "steps": 20,
         "width": 1024,
         "height": 1024,
@@ -306,7 +306,7 @@
     },
     "wan2-5b-video-widescreen": {
         "prompt": "{p}{np}",
-        "model": "wan2.2_ti2v_5B",
+        "model": "wan2_2_5B_ti2v",
         "steps": 20,
         "width": 1920,
         "height": 1080,
@@ -317,7 +317,7 @@
     },
     "wan2-14b-video-quality": {
         "prompt": "{p}{np}",
-        "model": "wan2.2-t2v-a14b-hq",
+        "model": "wan2_2_t2v_14b_hq",
         "steps": 20,
         "width": 1280,
         "height": 704,
@@ -328,7 +328,7 @@
     },
     "wan2-14b-video-quality-short": {
         "prompt": "{p}{np}",
-        "model": "wan2.2-t2v-a14b-hq",
+        "model": "wan2_2_t2v_14b_hq",
         "steps": 20,
         "width": 1280,
         "height": 704,
@@ -339,7 +339,7 @@
     },
     "wan2-14b-video-quality-portrait": {
         "prompt": "{p}{np}",
-        "model": "wan2.2-t2v-a14b-hq",
+        "model": "wan2_2_t2v_14b_hq",
         "steps": 20,
         "width": 704,
         "height": 1280,
@@ -350,7 +350,7 @@
     },
     "wan2-14b-video-quality-square": {
         "prompt": "{p}{np}",
-        "model": "wan2.2-t2v-a14b-hq",
+        "model": "wan2_2_t2v_14b_hq",
         "steps": 20,
         "width": 1024,
         "height": 1024,
@@ -361,7 +361,7 @@
     },
     "wan2-14b-video-quality-widescreen": {
         "prompt": "{p}{np}",
-        "model": "wan2.2-t2v-a14b-hq",
+        "model": "wan2_2_t2v_14b_hq",
         "steps": 20,
         "width": 1920,
         "height": 1080,
