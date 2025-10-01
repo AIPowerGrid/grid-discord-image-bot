@@ -15,33 +15,47 @@ const RE_INI_KEY_VAL = /^\s*([\w.-]+)\s*=\s*(.*)?\s*$/
 
 // Try to find .env file in multiple locations
 const envPaths = [
-    `${process.cwd()}/.env`,
-    `${process.cwd()}/src/.env`,
-    './.env',
-    './src/.env'
+    `${process.cwd()}/.env`,    // For local development and Docker
+    './.env',                   // Relative path fallback
+    `${process.cwd()}/src/.env`, // Alternative Docker location
+    './src/.env'                // Alternative relative path
 ];
 
 let envContent = '';
+let envLoaded = false;
+
 for (const envPath of envPaths) {
     try {
         envContent = readFileSync(envPath, 'utf8');
         console.log(`Loaded .env from: ${envPath}`);
+        envLoaded = true;
         break;
     } catch (error) {
         // Continue to next path
     }
 }
 
-if (!envContent) {
-    console.error('No .env file found in any of the expected locations:', envPaths);
-    process.exit(1);
-}
+if (envLoaded) {
+    // Parse .env file if found
+    for (const line of envContent.split(/[\r\n]/)) {
+        const [, key, value] = line.match(RE_INI_KEY_VAL) || []
+        if (!key) continue
 
-for (const line of envContent.split(/[\r\n]/)) {
-    const [, key, value] = line.match(RE_INI_KEY_VAL) || []
-    if (!key) continue
-
-    process.env[key] = value?.trim() || ""
+        process.env[key] = value?.trim() || ""
+    }
+} else {
+    // No .env file found - this is normal in containerized deployments
+    console.log('No .env file found - using environment variables directly (normal for Docker/container deployments)');
+    
+    // Validate that required environment variables are set
+    const requiredEnvVars = ['DISCORD_TOKEN'];
+    const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
+    
+    if (missingVars.length > 0) {
+        console.error('Missing required environment variables:', missingVars);
+        console.error('Please set these environment variables in your deployment platform');
+        process.exit(1);
+    }
 }
 
 let connection: Pool | undefined
@@ -187,3 +201,4 @@ client.on("messageCreate", async (message) => {
         }]
     });
 });
+
