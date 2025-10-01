@@ -315,7 +315,7 @@
               "wan2-14b-video-quality-widescreen",
               "wan2.2-t2v-a14b"
           ],
-          "default_style": "wan2-5b-video",
+          "default_style": "wan2.2-t2v-a14b",
           "content_type": "video"
       }
   }
