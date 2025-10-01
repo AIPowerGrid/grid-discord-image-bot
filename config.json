@@ -303,9 +303,19 @@
       },
       "1411466965813559346": {
           "allowed_styles": [
+              "wan2-5b-video",
+              "wan2-5b-video-short",
+              "wan2-5b-video-portrait", 
+              "wan2-5b-video-square",
+              "wan2-5b-video-widescreen",
+              "wan2-14b-video-quality",
+              "wan2-14b-video-quality-short",
+              "wan2-14b-video-quality-portrait",
+              "wan2-14b-video-quality-square",
+              "wan2-14b-video-quality-widescreen",
               "wan2.2-t2v-a14b"
           ],
-          "default_style": "wan2.2-t2v-a14b",
+          "default_style": "wan2-5b-video",
           "content_type": "video"
       }
   }
