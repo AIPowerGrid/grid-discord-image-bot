@@ -177,13 +177,18 @@ ${!start_status?.is_possible ? "**Request can not be fulfilled with current amou
             let prev_left = 1;
             let done = false;
             
-            // Set up interval to update status
+            // Set up interval to update status - use longer interval for video generation
+            const pollInterval = isVideoChannel ? 20 : (ctx.client.config?.generate?.update_generation_status_interval_seconds || 5);
+            let consecutiveErrors = 0;
+            
             const interval = setInterval(async () => {
                 if (done) return;
                 
-                // Check generation status
-                const status = await ctx.ai_horde_manager.getImageGenerationCheck(generation_start.id);
-                const horde_data = await ctx.ai_horde_manager.getPerformance();
+                try {
+                    // Check generation status
+                    const status = await ctx.ai_horde_manager.getImageGenerationCheck(generation_start.id);
+                    const horde_data = await ctx.ai_horde_manager.getPerformance();
+                    consecutiveErrors = 0; // Reset error count on success
                 
                 // Debug: Log the status for video generations
                 if (isVideoChannel) {
@@ -258,17 +263,21 @@ ${!status.is_possible ? "**Request can not be fulfilled with current amount of w
                 // Check if generation is complete
                 let generationComplete = status.done;
                 
-                // Fallback: For video generations, check if result is actually ready
-                if (!generationComplete && isVideoChannel && ((status?.finished && status.finished > 0) || status?.processing === 0)) {
-                    console.log('[DEBUG] Video generation: checking if result is ready despite status.done being false');
+                // Conservative fallback: Only check if finished > 0 (not just processing === 0)
+                if (!generationComplete && isVideoChannel && status?.finished && status.finished > 0) {
+                    console.log('[DEBUG] Video generation: checking if result is ready (finished > 0)');
                     try {
                         const testImages = await ctx.ai_horde_manager.getImageGenerationStatus(generation_start.id);
                         if (testImages.generations && testImages.generations.length > 0) {
                             console.log('[DEBUG] Found video result, proceeding with completion');
                             generationComplete = true;
                         }
-                    } catch (e) {
-                        console.log('[DEBUG] Fallback check failed:', e);
+                    } catch (e: any) {
+                        console.log('[DEBUG] Fallback check failed:', e?.message || 'unknown error');
+                        // Don't do fallback checks if we're rate limited
+                        if (e?.status === 429) {
+                            console.log('[DEBUG] Rate limited, skipping fallback checks');
+                        }
                     }
                 }
                 
@@ -531,7 +540,32 @@ ${!status.is_possible ? "**Request can not be fulfilled with current amount of w
                         components
                     });
                 }
-            }, 1000 * (ctx.client.config?.generate?.update_generation_status_interval_seconds || 5));
+                } catch (error: any) {
+                    consecutiveErrors++;
+                    console.error(`[ERROR] Status check failed (attempt ${consecutiveErrors}):`, error?.message || 'unknown error');
+                    
+                    // Handle rate limiting
+                    if (error?.status === 429) {
+                        console.log('[DEBUG] Rate limited, increasing poll interval temporarily');
+                        // Don't clear interval, just skip this iteration
+                        return;
+                    }
+                    
+                    // If too many consecutive errors, give up
+                    if (consecutiveErrors >= 5) {
+                        console.error('[ERROR] Too many consecutive failures, stopping generation monitoring');
+                        clearInterval(interval);
+                        if (!done) {
+                            await ctx.interaction.editReply({
+                                content: "❌ Generation monitoring failed due to repeated errors. The generation may still complete.",
+                                components: [],
+                                embeds: []
+                            }).catch(console.error);
+                        }
+                        return;
+                    }
+                }
+            }, 1000 * pollInterval);
             
         } catch (error) {
             console.error("Error in quickgenerate:", error);

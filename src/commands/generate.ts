@@ -501,19 +501,25 @@ ${showEta ? `**ETA:** <t:${Math.floor(Date.now()/1000)+(status?.wait_time ?? 0)}
                     return {status, horde_data};
                 }
                 
-                // Fallback for video channels
-                console.log('[DEBUG] Video generation: checking if result is ready despite status.done being false');
-                try {
-                    const testImages = await ctx.ai_horde_manager.getImageGenerationStatus(generation_start!.id!);
-                    if (!testImages.generations || testImages.generations.length === 0) {
-                        return {status, horde_data}; 
+                // Conservative fallback for video channels - only if finished > 0
+                if (status?.finished && status.finished > 0) {
+                    console.log('[DEBUG] Video generation: checking if result is ready (finished > 0)');
+                    try {
+                        const testImages = await ctx.ai_horde_manager.getImageGenerationStatus(generation_start!.id!);
+                        if (!testImages.generations || testImages.generations.length === 0) {
+                            return {status, horde_data}; 
+                        }
+                        
+                        console.log('[DEBUG] Found video result, proceeding with completion');
+                        done = true;
+                    } catch (e: any) {
+                        console.log('[DEBUG] Fallback check failed:', e?.message || 'unknown error');
+                        // Skip fallback if rate limited
+                        if (e?.status === 429) {
+                            console.log('[DEBUG] Rate limited, skipping fallback checks');
+                        }
+                        return {status, horde_data};
                     }
-                    
-                    console.log('[DEBUG] Found video result, proceeding with completion');
-                    done = true;
-                } catch (e) {
-                    console.log('[DEBUG] Fallback check failed:', e);
-                    return {status, horde_data};
                 }
             }
             
