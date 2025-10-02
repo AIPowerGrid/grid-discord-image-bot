@@ -26,15 +26,27 @@ export default class extends Component {
         
         if (customId.includes("style:")) {
             // Extract style and prompt from custom_id with style information
-            const parts = customId.substring(13).split("_"); // Remove "quickgenerate_"
-            console.log(`[DEBUG] Parsed parts:`, parts);
-            const styleInfo = parts[0]; // This should be "style:stylename"
-            console.log(`[DEBUG] Style info part: "${styleInfo}"`);
-            if (styleInfo && styleInfo.startsWith("style:")) {
-                style_raw = styleInfo.substring(6); // Remove "style:" to get stylename
-                console.log(`[DEBUG] Extracted style from button: "${style_raw}"`);
+            // Format: quickgenerate_style:stylename_prompt
+            const afterPrefix = customId.substring(13); // Remove "quickgenerate_"
+            console.log(`[DEBUG] After prefix: "${afterPrefix}"`);
+            
+            // Find the first underscore after "style:" to separate style from prompt
+            const styleStart = afterPrefix.indexOf("style:");
+            const styleEnd = afterPrefix.indexOf("_", styleStart);
+            
+            if (styleStart !== -1 && styleEnd !== -1) {
+                const styleInfo = afterPrefix.substring(styleStart, styleEnd);
+                console.log(`[DEBUG] Style info part: "${styleInfo}"`);
+                
+                if (styleInfo.startsWith("style:")) {
+                    style_raw = styleInfo.substring(6); // Remove "style:" to get stylename
+                    console.log(`[DEBUG] Extracted style from button: "${style_raw}"`);
+                }
+                
+                prompt = afterPrefix.substring(styleEnd + 1); // Everything after the underscore
+            } else {
+                console.log(`[DEBUG] Failed to parse style info from: "${afterPrefix}"`);
             }
-            prompt = parts.slice(1).join("_"); // Rest is the prompt
         } else {
             // Original format without style
             prompt = customId.substring(13); // "quickgenerate_".length
