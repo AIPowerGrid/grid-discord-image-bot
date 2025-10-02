@@ -194,30 +194,14 @@ client.on("messageCreate", async (message) => {
     if (isVideoChannel && channelConfig?.allowed_styles && channelConfig.allowed_styles.length > 1) {
         // For video channels with multiple styles, create buttons for each style
         const videoStyleButtons = channelConfig.allowed_styles.slice(0, 5).map((styleName: string) => {
-            // Create descriptive button labels
+            // Create descriptive button labels with GPU requirements
             let buttonLabel = "Video";
-            if (styleName.includes("5b") && styleName.includes("portrait")) {
-                buttonLabel = "5B Portrait";
-            } else if (styleName.includes("5b") && styleName.includes("square")) {
-                buttonLabel = "5B Square";
-            } else if (styleName.includes("5b") && styleName.includes("widescreen")) {
-                buttonLabel = "5B Widescreen";
-            } else if (styleName.includes("5b") && styleName.includes("short")) {
-                buttonLabel = "5B Short";
-            } else if (styleName.includes("5b")) {
-                buttonLabel = "5B Standard";
-            } else if (styleName.includes("14b") && styleName.includes("quality") && styleName.includes("portrait")) {
-                buttonLabel = "14B HQ Portrait";
-            } else if (styleName.includes("14b") && styleName.includes("quality") && styleName.includes("square")) {
-                buttonLabel = "14B HQ Square"; 
-            } else if (styleName.includes("14b") && styleName.includes("quality") && styleName.includes("widescreen")) {
-                buttonLabel = "14B HQ Widescreen";
-            } else if (styleName.includes("14b") && styleName.includes("quality") && styleName.includes("short")) {
-                buttonLabel = "14B HQ Short";
-            } else if (styleName.includes("14b") && styleName.includes("quality")) {
-                buttonLabel = "14B HQ";
-            } else if (styleName === "wan2.2-t2v-a14b") {
-                buttonLabel = "14B Original";
+            if (styleName === "wan2-5b-video") {
+                buttonLabel = "5B (Low Quality) - 5GB+ GPU";
+            } else if (styleName === "wan2-14b-video") {
+                buttonLabel = "14B (Standard) - 14GB+ GPU";
+            } else if (styleName === "wan2-14b-video-hq") {
+                buttonLabel = "14B (High Quality) - 64GB+ GPU";
             } else {
                 buttonLabel = styleName.replace("wan2-", "").replace("-video", "").replace("-", " ");
             }

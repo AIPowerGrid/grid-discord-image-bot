@@ -304,12 +304,10 @@
       "1411466965813559346": {
           "allowed_styles": [
               "wan2-5b-video",
-              "wan2.2-t2v-a14b", 
-              "wan2-14b-video-quality",
-              "wan2-5b-video-portrait",
-              "wan2-5b-video-widescreen"
+              "wan2-14b-video",
+              "wan2-14b-video-hq"
           ],
-          "default_style": "wan2-14b-video-quality",
+          "default_style": "wan2-14b-video",
           "content_type": "video"
       }
   }
