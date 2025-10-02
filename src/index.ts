@@ -193,7 +193,7 @@ client.on("messageCreate", async (message) => {
     
     if (isVideoChannel && channelConfig?.allowed_styles && channelConfig.allowed_styles.length > 1) {
         // Get available models and worker counts
-        const models = await ai_horde_manager.getModels({force: false}).catch(() => []);
+        const models = await ai_horde_manager.getModels({force: true}).catch(() => []);
         const modelWorkerMap: Record<string, number> = {};
         models.forEach(model => {
             if (model.name) {
@@ -201,17 +201,17 @@ client.on("messageCreate", async (message) => {
             }
         });
         
-        // Map style names to model names
-        const styleToModel: Record<string, string> = {
-            "wan2-5b-video": "wan2_2_ti2v_5b",
-            "wan2-14b-video": "wan2_2_t2v_14b",
-            "wan2-14b-video-hq": "wan2_2_t2v_14b_hq"
-        };
+        console.log('[DEBUG] Available models from API:', Object.keys(modelWorkerMap));
+        console.log('[DEBUG] Worker counts:', modelWorkerMap);
         
         // For video channels with multiple styles, create buttons for each style
         const videoStyleButtons = channelConfig.allowed_styles.slice(0, 5).map((styleName: string) => {
-            // Get worker count for this style's model
-            const modelName = styleToModel[styleName];
+            // Get model name from styles config
+            const styleConfig = client.horde_styles?.[styleName];
+            const modelName = styleConfig?.model;
+            
+            console.log(`[DEBUG] Style ${styleName} -> model: ${modelName}, workers: ${modelName ? modelWorkerMap[modelName] : 'N/A'}`);
+            
             const workerCount = modelName ? modelWorkerMap[modelName] || 0 : 0;
             const workerText = workerCount > 0 ? ` (${workerCount} worker${workerCount !== 1 ? 's' : ''})` : ' (0 workers)';
             
