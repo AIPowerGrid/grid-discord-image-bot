@@ -15,6 +15,7 @@ export default class extends Component {
     override async run(ctx: ComponentContext<ComponentType.Button>): Promise<any> {
         // Get prompt from the custom_id
         const customId = ctx.interaction.customId;
+        console.log(`[DEBUG] Button customId: "${customId}"`);
         
         // Check if the custom_id includes style information (format: quickgenerate_style:stylename_prompt)
         // Get channel-specific default style or fall back to global default
@@ -26,7 +27,9 @@ export default class extends Component {
         if (customId.includes("style:")) {
             // Extract style and prompt from custom_id with style information
             const parts = customId.substring(13).split("_"); // Remove "quickgenerate_"
+            console.log(`[DEBUG] Parsed parts:`, parts);
             const styleInfo = parts[0]; // This should be "style:stylename"
+            console.log(`[DEBUG] Style info part: "${styleInfo}"`);
             if (styleInfo && styleInfo.startsWith("style:")) {
                 style_raw = styleInfo.substring(6); // Remove "style:" to get stylename
                 console.log(`[DEBUG] Extracted style from button: "${style_raw}"`);
