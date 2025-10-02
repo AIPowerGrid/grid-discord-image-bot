@@ -309,7 +309,7 @@
               "wan2-5b-video-portrait",
               "wan2-5b-video-widescreen"
           ],
-          "default_style": "wan2-5b-video",
+          "default_style": "wan2-14b-video-quality",
           "content_type": "video"
       }
   }
