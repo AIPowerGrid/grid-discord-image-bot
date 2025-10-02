@@ -192,16 +192,37 @@ client.on("messageCreate", async (message) => {
     let components: any[] = [];
     
     if (isVideoChannel && channelConfig?.allowed_styles && channelConfig.allowed_styles.length > 1) {
+        // Get available models and worker counts
+        const models = await ai_horde_manager.getModels({force: false}).catch(() => []);
+        const modelWorkerMap: Record<string, number> = {};
+        models.forEach(model => {
+            if (model.name) {
+                modelWorkerMap[model.name] = model.count || 0;
+            }
+        });
+        
+        // Map style names to model names
+        const styleToModel: Record<string, string> = {
+            "wan2-5b-video": "wan2_2_ti2v_5b",
+            "wan2-14b-video": "wan2_2_t2v_14b",
+            "wan2-14b-video-hq": "wan2_2_t2v_14b_hq"
+        };
+        
         // For video channels with multiple styles, create buttons for each style
         const videoStyleButtons = channelConfig.allowed_styles.slice(0, 5).map((styleName: string) => {
-            // Create descriptive button labels with GPU requirements
+            // Get worker count for this style's model
+            const modelName = styleToModel[styleName];
+            const workerCount = modelName ? modelWorkerMap[modelName] || 0 : 0;
+            const workerText = workerCount > 0 ? ` (${workerCount} worker${workerCount !== 1 ? 's' : ''})` : ' (0 workers)';
+            
+            // Create descriptive button labels with worker counts
             let buttonLabel = "Video";
             if (styleName === "wan2-5b-video") {
-                buttonLabel = "5B (Low Quality) - 5GB+ GPU";
+                buttonLabel = `Low Quality${workerText}`;
             } else if (styleName === "wan2-14b-video") {
-                buttonLabel = "14B (Standard) - 14GB+ GPU";
+                buttonLabel = `Normal Quality${workerText}`;
             } else if (styleName === "wan2-14b-video-hq") {
-                buttonLabel = "14B (High Quality) - 64GB+ GPU";
+                buttonLabel = `High Quality${workerText}`;
             } else {
                 buttonLabel = styleName.replace("wan2-", "").replace("-video", "").replace("-", " ");
             }
