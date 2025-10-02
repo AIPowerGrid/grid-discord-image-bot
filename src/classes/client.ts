@@ -199,9 +199,13 @@ export class AIHordeClient extends Client {
 
 	getHordeStyle(input: string, search_order: ("style" | "category")[] = ["style", "category"]): HordeStyleData & {name: string, type: "style" | "category-style"} | null {
 		let result: HordeStyleData & {name: string, type: "style" | "category-style"} | null = null;
+		console.log(`[DEBUG] getHordeStyle called with input: "${input}"`);
 		for(let search of search_order) {
 			if(search === "style") {
-				const temp = this.horde_styles[input.toLowerCase()]
+				const lookupKey = input.toLowerCase();
+				console.log(`[DEBUG] Looking up style with key: "${lookupKey}"`);
+				const temp = this.horde_styles[lookupKey]
+				console.log(`[DEBUG] Found style data:`, temp ? { model: temp.model } : null);
 				if(temp) {
 					result = {...temp, name: input.toLowerCase(), type: "style"}
 				}

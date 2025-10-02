@@ -29,6 +29,7 @@ export default class extends Component {
             const styleInfo = parts[0]; // This should be "style:stylename"
             if (styleInfo && styleInfo.startsWith("style:")) {
                 style_raw = styleInfo.substring(6); // Remove "style:" to get stylename
+                console.log(`[DEBUG] Extracted style from button: "${style_raw}"`);
             }
             prompt = parts.slice(1).join("_"); // Rest is the prompt
         } else {
@@ -45,7 +46,9 @@ export default class extends Component {
 
         try {
             // Use the style from the custom_id or the default
+            console.log(`[DEBUG] Looking up style: "${style_raw}"`);
             const style = ctx.client.getHordeStyle(style_raw);
+            console.log(`[DEBUG] Found style:`, style ? { name: style.name, model: style.model } : null);
             
             if (!style?.prompt?.length) {
                 return ctx.error({error: "Unable to find style. Please try again later."});
