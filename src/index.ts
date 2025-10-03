@@ -212,7 +212,9 @@ client.on("messageCreate", async (message) => {
             
             console.log(`[DEBUG] Style ${styleName} -> model: ${modelName}, workers: ${modelName ? modelWorkerMap[modelName] : 'N/A'}`);
             
-            const workerCount = modelName ? modelWorkerMap[modelName] || 0 : 0;
+            // Subtract 1 from worker count (reserve one worker)
+            const actualWorkerCount = modelName ? modelWorkerMap[modelName] || 0 : 0;
+            const workerCount = Math.max(0, actualWorkerCount - 1);
             const workerText = workerCount > 0 ? ` (${workerCount} worker${workerCount !== 1 ? 's' : ''})` : ' (0 workers)';
             
             // Create descriptive button labels with worker counts
