@@ -237,14 +237,6 @@ client.on("messageCreate", async (message) => {
             };
         });
         
-        // Add Advanced Settings button
-        videoStyleButtons.push({
-            type: 2,
-            style: 2, // Secondary style
-            custom_id: `video_advanced_${message.content.substring(0, 50)}`,
-            label: "⚙️ Advanced Settings"
-        });
-        
         // Split into rows of 5 buttons max
         const rows = [];
         for (let i = 0; i < videoStyleButtons.length; i += 5) {
