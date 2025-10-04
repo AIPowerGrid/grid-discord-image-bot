@@ -249,7 +249,7 @@ client.on("messageCreate", async (message) => {
             // Create descriptive button labels with worker counts
             let buttonLabel = "Video";
             if (styleName === "wan2-5b-video") {
-                buttonLabel = `Low Quality${workerText}`;
+                buttonLabel = `Better Quality${workerText}`;
             } else if (styleName === "wan2-14b-video") {
                 buttonLabel = `Normal Quality${workerText}`;
             } else if (styleName === "wan2-14b-video-hq") {
