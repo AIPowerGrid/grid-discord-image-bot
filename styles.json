@@ -253,12 +253,13 @@
         "prompt": "{p}{np}",
         "model": "wan2_2_ti2v_5b",
         "steps": 20,
-        "width": 1280,
-        "height": 704,
-        "video_length": 81,
+        "width": 1920,
+        "height": 1080,
+        "video_length": 160,
         "fps": 16,
         "cfg_scale": 5,
-        "sampler_name": "k_euler"
+        "sampler_name": "k_euler",
+        "button_label": "Better Quality"
     },
     "wan2-14b-video": {
         "prompt": "{p}{np}",
@@ -269,7 +270,8 @@
         "width": 640,
         "height": 640,
         "fps": 16,
-        "length": 81
+        "length": 81,
+        "button_label": "Normal Quality"
     },
     "wan2-14b-video-hq": {
         "prompt": "{p}{np}",
@@ -280,6 +282,7 @@
         "width": 640,
         "height": 640,
         "fps": 16,
-        "length": 81
+        "length": 81,
+        "button_label": "High Quality"
     }
 }

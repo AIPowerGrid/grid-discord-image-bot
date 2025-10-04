@@ -248,13 +248,11 @@ client.on("messageCreate", async (message) => {
             
             // Create descriptive button labels with worker counts
             let buttonLabel = "Video";
-            if (styleName === "wan2-5b-video") {
-                buttonLabel = `Better Quality${workerText}`;
-            } else if (styleName === "wan2-14b-video") {
-                buttonLabel = `Normal Quality${workerText}`;
-            } else if (styleName === "wan2-14b-video-hq") {
-                buttonLabel = `High Quality${workerText}`;
+            if (styleConfig?.button_label) {
+                // Use button label from styles config
+                buttonLabel = `${styleConfig.button_label}${workerText}`;
             } else {
+                // Fallback to style name formatting
                 buttonLabel = styleName.replace("wan2-", "").replace("-video", "").replace("-", " ");
             }
             
