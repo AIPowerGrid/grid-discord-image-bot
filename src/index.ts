@@ -192,12 +192,41 @@ client.on("messageCreate", async (message) => {
     let components: any[] = [];
     
     if (isVideoChannel && channelConfig?.allowed_styles && channelConfig.allowed_styles.length > 1) {
-        // Get available models and worker counts
+        // Get available models and worker counts with GPU filtering
         const models = await ai_horde_manager.getModels({force: true}).catch(() => []);
+        const workers = await ai_horde_manager.getWorkers().catch(() => []);
+        
+        // Filter workers by GPU series for different quality levels
+        const gpuFilteredWorkers = {
+            low: workers.filter(w => w.bridge_agent?.includes('RTX 3') || w.bridge_agent?.includes('RTX 4') || w.bridge_agent?.includes('RTX 5') || w.bridge_agent?.includes('RTX 6') || w.bridge_agent?.includes('GTX 1') || w.bridge_agent?.includes('GTX 2') || w.bridge_agent?.includes('GTX 3') || w.bridge_agent?.includes('GTX 4') || w.bridge_agent?.includes('GTX 5') || w.bridge_agent?.includes('GTX 6')),
+            standard: workers.filter(w => w.bridge_agent?.includes('RTX 5') || w.bridge_agent?.includes('RTX 6') || w.bridge_agent?.includes('GTX 5') || w.bridge_agent?.includes('GTX 6')),
+            high: workers.filter(w => w.bridge_agent?.includes('RTX 6') || w.bridge_agent?.includes('GTX 6'))
+        };
+        
         const modelWorkerMap: Record<string, number> = {};
         models.forEach(model => {
             if (model.name) {
-                modelWorkerMap[model.name] = model.count || 0;
+                // Get workers supporting this model
+                const modelWorkers = workers.filter(w => w.models?.includes(model.name));
+                
+                // Count workers by quality level
+                let workerCount = 0;
+                if (model.name.includes('5b')) {
+                    // Low quality - 3000 series or better
+                    workerCount = modelWorkers.filter(w => gpuFilteredWorkers.low.includes(w)).length;
+                } else if (model.name.includes('14b') && !model.name.includes('hq')) {
+                    // Standard quality - 5000 series or better  
+                    workerCount = modelWorkers.filter(w => gpuFilteredWorkers.standard.includes(w)).length;
+                } else if (model.name.includes('14b_hq') || model.name.includes('hq')) {
+                    // High quality - 6000 series or better
+                    workerCount = modelWorkers.filter(w => gpuFilteredWorkers.high.includes(w)).length;
+                } else {
+                    // Fallback to all workers
+                    workerCount = modelWorkers.length;
+                }
+                
+                // Divide by 2 (unless 0 to avoid divide by zero)
+                modelWorkerMap[model.name] = workerCount === 0 ? 0 : Math.floor(workerCount / 2);
             }
         });
         
