@@ -255,7 +255,7 @@
         "steps": 20,
         "width": 640,
         "height": 640,
-        "video_length": 112,
+        "video_length": 80,
         "fps": 16,
         "cfg_scale": 5,
         "sampler_name": "k_euler",
