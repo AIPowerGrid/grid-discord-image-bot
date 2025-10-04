@@ -227,6 +227,8 @@ client.on("messageCreate", async (message) => {
                 
                 // Divide by 2 (unless 0 to avoid divide by zero)
                 modelWorkerMap[model.name] = workerCount === 0 ? 0 : Math.floor(workerCount / 2);
+                
+                console.log(`[DEBUG] Model ${model.name}: ${modelWorkers.length} total workers, ${workerCount} filtered workers, final count: ${modelWorkerMap[model.name]}`);
             }
         });
         

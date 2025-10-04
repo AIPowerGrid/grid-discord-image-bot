@@ -303,8 +303,8 @@
       },
       "1411466965813559346": {
           "allowed_styles": [
-              "wan2-5b-video",
               "wan2-14b-video",
+              "wan2-5b-video",
               "wan2-14b-video-hq"
           ],
           "default_style": "wan2-14b-video",
