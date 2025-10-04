@@ -259,7 +259,7 @@
         "fps": 16,
         "cfg_scale": 5,
         "sampler_name": "k_euler",
-        "button_label": "Better Quality"
+        "button_label": "Better"
     },
     "wan2-14b-video": {
         "prompt": "{p}{np}",
@@ -271,7 +271,7 @@
         "height": 640,
         "fps": 16,
         "length": 81,
-        "button_label": "Normal Quality"
+        "button_label": "Standard"
     },
     "wan2-14b-video-hq": {
         "prompt": "{p}{np}",
@@ -283,6 +283,6 @@
         "height": 640,
         "fps": 16,
         "length": 81,
-        "button_label": "High Quality"
+        "button_label": "Best (experimental)"
     }
 }
