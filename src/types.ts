@@ -184,6 +184,9 @@ export interface HordeStyleData {
     steps?: number,
     cfg_scale?: number,
     hires_fix?: boolean,
+    button_label?: string,
+    video_length?: number,
+    fps?: number,
     loras?: {
         name: string,
         inject_trigger?: string

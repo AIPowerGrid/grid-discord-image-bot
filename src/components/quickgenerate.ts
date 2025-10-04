@@ -120,10 +120,10 @@ export default class extends Component {
                 
                 if (gpuRequirements.length > 0) {
                     filteredWorkers = workers
-                        .filter(w => w.models?.includes(style.model) && 
+                        .filter(w => w.models?.includes(style.model || '') && 
                                    gpuRequirements.some(req => w.bridge_agent?.includes(req)))
                         .map(w => w.id)
-                        .filter(Boolean);
+                        .filter((id): id is string => Boolean(id));
                     
                     console.log(`[DEBUG] GPU-filtered workers for ${style.model}: ${filteredWorkers.length} workers`);
                 }

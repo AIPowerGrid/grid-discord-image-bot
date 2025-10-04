@@ -207,7 +207,7 @@ client.on("messageCreate", async (message) => {
         models.forEach(model => {
             if (model.name) {
                 // Get workers supporting this model
-                const modelWorkers = workers.filter(w => w.models?.includes(model.name));
+                const modelWorkers = workers.filter(w => w.models?.includes(model.name!));
                 
                 // Count workers by quality level
                 let workerCount = 0;
