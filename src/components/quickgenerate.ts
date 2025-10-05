@@ -172,7 +172,7 @@ export default class extends Component {
             
             // Debug: Log generation parameters for video channels
             if (isVideoChannel) {
-                console.log(`[DEBUG] Video generation request - Model: ${style.model}, Params:`, {
+                console.log(`[DEBUG] Video generation request - Model: ${style.model}, Style length: ${(style as any).length}, Params:`, {
                     width: generationParams.width,
                     height: generationParams.height,
                     length: (generationParams as any).length,
