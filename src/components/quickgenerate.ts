@@ -128,34 +128,9 @@ export default class extends Component {
                 })
             };
             
-            // Filter workers by GPU requirements for video generations
+            // For now, don't filter workers - let the API handle worker selection
+            // TODO: Implement proper worker filtering once we understand the bridge_agent format
             let filteredWorkers: string[] | undefined = undefined;
-            if (isVideoChannel && style.model) {
-                const workers = await ctx.ai_horde_manager.getWorkers().catch(() => []);
-                
-                // Filter workers by GPU series based on model quality
-                let gpuRequirements: string[] = [];
-                if (style.model.includes('5b')) {
-                    // Low quality - 3000 series or better
-                    gpuRequirements = ['RTX 3', 'RTX 4', 'RTX 5', 'RTX 6', 'GTX 1', 'GTX 2', 'GTX 3', 'GTX 4', 'GTX 5', 'GTX 6'];
-                } else if (style.model.includes('14b') && !style.model.includes('hq')) {
-                    // Standard quality - 5000 series or better  
-                    gpuRequirements = ['RTX 5', 'RTX 6', 'GTX 5', 'GTX 6'];
-                } else if (style.model.includes('14b_hq') || style.model.includes('hq')) {
-                    // High quality - 6000 series or better
-                    gpuRequirements = ['RTX 6', 'GTX 6'];
-                }
-                
-                if (gpuRequirements.length > 0) {
-                    filteredWorkers = workers
-                        .filter(w => w.models?.includes(style.model || '') && 
-                                   gpuRequirements.some(req => w.bridge_agent?.includes(req)))
-                        .map(w => w.id)
-                        .filter((id): id is string => Boolean(id));
-                    
-                    console.log(`[DEBUG] GPU-filtered workers for ${style.model}: ${filteredWorkers.length} workers`);
-                }
-            }
 
             const generation_data = {
                 prompt: formattedPrompt,
@@ -177,7 +152,7 @@ export default class extends Component {
             
             // Debug: Log generation parameters for video channels
             if (isVideoChannel) {
-                console.log(`[DEBUG] Video generation request - Model: ${style.model}, Style length: ${(style as any).length}, Params:`, {
+                console.log(`[DEBUG] Video generation request - Model: ${style.model}, Style length: ${(style as any).length}, Generation data length: ${generation_data.length}, Params:`, {
                     width: generationParams.width,
                     height: generationParams.height,
                     length: (generationParams as any).length,
@@ -185,6 +160,7 @@ export default class extends Component {
                     steps: generationParams.steps,
                     cfg_scale: generationParams.cfg_scale
                 });
+                console.log(`[DEBUG] Full generation_data object:`, JSON.stringify(generation_data, null, 2));
             }
             
             // Start the generation

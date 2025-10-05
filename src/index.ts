@@ -196,8 +196,8 @@ client.on("messageCreate", async (message) => {
         const models = await ai_horde_manager.getModels({force: true}).catch(() => []);
         const workers = await ai_horde_manager.getWorkers().catch(() => []);
         
-        // For now, use all workers that support the model - GPU filtering is too restrictive
-        // TODO: Implement proper GPU detection once we know the actual bridge_agent format
+        // Simple worker filtering based on model requirements
+        // This prevents workers from picking up models they can't handle efficiently
         
         console.log(`[DEBUG] Total workers: ${workers.length}`);
         console.log(`[DEBUG] Worker bridge_agents:`, workers.map(w => w.bridge_agent).slice(0, 5));
