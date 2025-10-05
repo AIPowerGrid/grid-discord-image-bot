@@ -4,6 +4,82 @@ import { ComponentContext } from "../classes/componentContext";
 import { GenerationStable } from "../types/generation";
 import Centra from "centra";
 
+// Enhanced prompt system for better video generation results
+function enhanceVideoPrompt(userPrompt: string): string {
+    // Don't enhance if the prompt is already elaborate (contains multiple commas or is very long)
+    if (userPrompt.length > 100 || userPrompt.includes(',')) {
+        return userPrompt;
+    }
+    
+    const originalPrompt = userPrompt.toLowerCase().trim();
+    
+    // Define enhancement templates based on content
+    const enhancements = {
+        // People/characters
+        person: [
+            "cinematic shot of {prompt}, professional lighting, high quality, detailed facial features, natural expressions, smooth motion",
+            "close-up portrait of {prompt}, dramatic lighting, cinematic composition, high resolution, fluid movement",
+            "dynamic scene featuring {prompt}, professional cinematography, detailed textures, smooth camera movement"
+        ],
+        // Animals
+        animal: [
+            "wildlife documentary style shot of {prompt}, natural habitat, professional cinematography, detailed fur/feathers, fluid movement",
+            "close-up of {prompt}, natural lighting, high detail, smooth motion, cinematic quality",
+            "dynamic action shot of {prompt}, professional wildlife photography, detailed textures, fluid movement"
+        ],
+        // Objects/vehicles
+        object: [
+            "cinematic shot of {prompt}, professional lighting, detailed textures, smooth camera movement, high quality",
+            "dynamic scene featuring {prompt}, dramatic lighting, cinematic composition, fluid motion",
+            "close-up detail shot of {prompt}, professional photography, high resolution, smooth movement"
+        ],
+        // Landscapes/nature
+        landscape: [
+            "cinematic landscape shot of {prompt}, golden hour lighting, dramatic skies, smooth camera movement, high quality",
+            "aerial drone shot of {prompt}, professional cinematography, natural lighting, fluid camera movement",
+            "panoramic view of {prompt}, cinematic composition, dramatic lighting, smooth motion"
+        ],
+        // Abstract/conceptual
+        abstract: [
+            "cinematic abstract scene of {prompt}, dramatic lighting, fluid motion, high quality, artistic composition",
+            "dynamic visual effects shot of {prompt}, professional cinematography, smooth movement, high detail",
+            "artistic interpretation of {prompt}, cinematic lighting, fluid motion, high quality"
+        ]
+    };
+    
+    // Categorize the prompt
+    let category = 'abstract'; // default
+    if (/\b(person|man|woman|girl|boy|human|character|portrait|face)\b/.test(originalPrompt)) {
+        category = 'person';
+    } else if (/\b(cat|dog|bird|animal|creature|pet|wildlife)\b/.test(originalPrompt)) {
+        category = 'animal';
+    } else if (/\b(car|truck|bike|vehicle|machine|building|house|structure)\b/.test(originalPrompt)) {
+        category = 'object';
+    } else if (/\b(landscape|mountain|forest|ocean|beach|sky|nature|scenery)\b/.test(originalPrompt)) {
+        category = 'landscape';
+    }
+    
+    // Get random enhancement from the appropriate category
+    const templateOptions = enhancements[category];
+    const selectedTemplate = templateOptions[Math.floor(Math.random() * templateOptions.length)];
+    
+    // Apply the template
+    const enhancedPrompt = selectedTemplate.replace('{prompt}', userPrompt);
+    
+    // Add quality boosters
+    const qualityBoosters = [
+        "masterpiece", "best quality", "ultra detailed", "4k", "8k", "cinematic", 
+        "professional", "award winning", "stunning", "breathtaking"
+    ];
+    
+    // Add 2-3 random quality boosters
+    const selectedBoosters = qualityBoosters
+        .sort(() => 0.5 - Math.random())
+        .slice(0, 3);
+    
+    return `${enhancedPrompt}, ${selectedBoosters.join(', ')}`;
+}
+
 export default class extends Component {
     constructor() {
         super({
@@ -97,8 +173,18 @@ export default class extends Component {
                 return ctx.error({error: "Unable to find style. Please try again later."});
             }
             
-            // Apply the style to the prompt
-            let formattedPrompt = style.prompt.slice().replace("{p}", prompt);
+            // Enhance prompts for video generation to get better results
+            const channelCfg = ctx.client.config.channel_overrides?.[ctx.interaction.channelId!];
+            const isVideoChannel = channelCfg?.content_type === "video";
+            const enhancedPrompt = isVideoChannel ? enhanceVideoPrompt(prompt) : prompt;
+            
+            // Debug: Log prompt enhancement for video channels
+            if (isVideoChannel && enhancedPrompt !== prompt) {
+                console.log(`[DEBUG] PROMPT ENHANCEMENT - Original: "${prompt}" -> Enhanced: "${enhancedPrompt}"`);
+            }
+            
+            // Apply the style to the enhanced prompt
+            let formattedPrompt = style.prompt.slice().replace("{p}", enhancedPrompt);
             formattedPrompt = formattedPrompt.replace("{np}", "");
             
             // Get the token
