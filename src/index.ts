@@ -201,7 +201,7 @@ client.on("messageCreate", async (message) => {
         
         console.log(`[DEBUG] Total workers: ${workers.length}`);
         console.log(`[DEBUG] Worker bridge_agents:`, workers.map(w => w.bridge_agent).slice(0, 5));
-        console.log(`[DEBUG] Worker VRAM info:`, workers.map(w => ({ id: w.id, vram: w.max_vram })).slice(0, 5));
+        console.log(`[DEBUG] Worker VRAM info:`, workers.map(w => ({ id: w.id, vram: (w as any).max_vram })).slice(0, 5));
         
         const modelWorkerMap: Record<string, number> = {};
         models.forEach(model => {
@@ -215,21 +215,21 @@ client.on("messageCreate", async (message) => {
                 let workerCount = 0;
                 if (model.name.includes('5b')) {
                     // Better - requires 16GB+ VRAM
-                    workerCount = modelWorkers.filter(w => (w.max_vram || 0) >= 16).length;
+                    workerCount = modelWorkers.filter(w => ((w as any).max_vram || 0) >= 16).length;
                     if (workerCount === 0) {
                         workerCount = modelWorkers.length; // Fallback to all workers
                         console.log(`[DEBUG] No 16GB+ VRAM workers for 5b model, using all ${workerCount} workers`);
                     }
                 } else if (model.name.includes('14b') && !model.name.includes('hq')) {
                     // Standard - requires 32GB+ VRAM
-                    workerCount = modelWorkers.filter(w => (w.max_vram || 0) >= 32).length;
+                    workerCount = modelWorkers.filter(w => ((w as any).max_vram || 0) >= 32).length;
                     if (workerCount === 0) {
                         workerCount = modelWorkers.length; // Fallback to all workers
                         console.log(`[DEBUG] No 32GB+ VRAM workers for 14b model, using all ${workerCount} workers`);
                     }
                 } else if (model.name.includes('14b_hq') || model.name.includes('hq')) {
                     // Best - requires 64GB+ VRAM
-                    workerCount = modelWorkers.filter(w => (w.max_vram || 0) >= 64).length;
+                    workerCount = modelWorkers.filter(w => ((w as any).max_vram || 0) >= 64).length;
                     if (workerCount === 0) {
                         workerCount = modelWorkers.length; // Fallback to all workers
                         console.log(`[DEBUG] No 64GB+ VRAM workers for 14b_hq model, using all ${workerCount} workers`);
