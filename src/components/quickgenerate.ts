@@ -145,14 +145,14 @@ export default class extends Component {
                 shared: false,
                 // Add video parameters at top level for API
                 ...(isVideoChannel && {
-                    length: (style as any).length || (style as any).video_length || 81,
+                    length: style.model?.includes('14b_hq') ? 48 : ((style as any).length || (style as any).video_length || 81),
                     fps: (style as any).fps || 16
                 })
             };
             
             // Debug: Log generation parameters for video channels
             if (isVideoChannel) {
-                console.log(`[DEBUG] Video generation request - Model: ${style.model}, Style length: ${(style as any).length}, Generation data length: ${generation_data.length}, Params:`, {
+                console.log(`[DEBUG] FORCE RESTART - Video generation request - Model: ${style.model}, Style length: ${(style as any).length}, Generation data length: ${generation_data.length}, Params:`, {
                     width: generationParams.width,
                     height: generationParams.height,
                     length: (generationParams as any).length,
