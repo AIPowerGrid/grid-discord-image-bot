@@ -239,7 +239,15 @@ client.on("messageCreate", async (message) => {
                 console.log(`[DEBUG] ${model.name} workers VRAM details:`, modelWorkers.slice(0, 3).map(w => ({
                     id: w.id,
                     bridge_agent: w.bridge_agent,
-                    vram: getWorkerVRAM(w)
+                    vram: getWorkerVRAM(w),
+                    all_properties: Object.keys(w),
+                    sample_properties: {
+                        max_vram: (w as any).max_vram,
+                        max_vram_gb: (w as any).max_vram_gb,
+                        vram: (w as any).vram,
+                        memory: (w as any).memory,
+                        info: (w as any).info
+                    }
                 })));
                 
                 if (model.name.includes('5b')) {
