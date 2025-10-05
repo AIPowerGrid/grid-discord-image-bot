@@ -201,7 +201,15 @@ client.on("messageCreate", async (message) => {
         
         console.log(`[DEBUG] Total workers: ${workers.length}`);
         console.log(`[DEBUG] Worker bridge_agents:`, workers.map(w => w.bridge_agent).slice(0, 5));
-        console.log(`[DEBUG] Worker VRAM info:`, workers.map(w => ({ id: w.id, vram: (w as any).max_vram })).slice(0, 5));
+        console.log(`[DEBUG] Worker properties:`, workers.slice(0, 2).map(w => Object.keys(w)));
+        console.log(`[DEBUG] Worker VRAM info:`, workers.slice(0, 5).map(w => ({ 
+            id: w.id, 
+            max_vram: (w as any).max_vram,
+            max_vram_gb: (w as any).max_vram_gb,
+            vram: (w as any).vram,
+            memory: (w as any).memory,
+            info: (w as any).info
+        })));
         
         const modelWorkerMap: Record<string, number> = {};
         models.forEach(model => {
@@ -213,23 +221,44 @@ client.on("messageCreate", async (message) => {
                 
                 // Filter workers by VRAM requirements
                 let workerCount = 0;
+                
+                // Helper function to get VRAM from various possible fields
+                const getWorkerVRAM = (worker: any): number => {
+                    // Try different possible VRAM fields
+                    const vram = worker.max_vram || worker.max_vram_gb || worker.vram || worker.memory;
+                    if (vram) return vram;
+                    
+                    // Try to parse from bridge_agent string (e.g., "RTX 4090 24GB")
+                    const bridgeAgent = worker.bridge_agent || '';
+                    const vramMatch = bridgeAgent.match(/(\d+)GB/);
+                    if (vramMatch) return parseInt(vramMatch[1]);
+                    
+                    return 0;
+                };
+                
+                console.log(`[DEBUG] ${model.name} workers VRAM details:`, modelWorkers.slice(0, 3).map(w => ({
+                    id: w.id,
+                    bridge_agent: w.bridge_agent,
+                    vram: getWorkerVRAM(w)
+                })));
+                
                 if (model.name.includes('5b')) {
                     // Better - requires 16GB+ VRAM
-                    workerCount = modelWorkers.filter(w => ((w as any).max_vram || 0) >= 16).length;
+                    workerCount = modelWorkers.filter(w => getWorkerVRAM(w) >= 16).length;
                     if (workerCount === 0) {
                         workerCount = modelWorkers.length; // Fallback to all workers
                         console.log(`[DEBUG] No 16GB+ VRAM workers for 5b model, using all ${workerCount} workers`);
                     }
                 } else if (model.name.includes('14b') && !model.name.includes('hq')) {
                     // Standard - requires 32GB+ VRAM
-                    workerCount = modelWorkers.filter(w => ((w as any).max_vram || 0) >= 32).length;
+                    workerCount = modelWorkers.filter(w => getWorkerVRAM(w) >= 32).length;
                     if (workerCount === 0) {
                         workerCount = modelWorkers.length; // Fallback to all workers
                         console.log(`[DEBUG] No 32GB+ VRAM workers for 14b model, using all ${workerCount} workers`);
                     }
                 } else if (model.name.includes('14b_hq') || model.name.includes('hq')) {
                     // Best - requires 64GB+ VRAM
-                    workerCount = modelWorkers.filter(w => ((w as any).max_vram || 0) >= 64).length;
+                    workerCount = modelWorkers.filter(w => getWorkerVRAM(w) >= 64).length;
                     if (workerCount === 0) {
                         workerCount = modelWorkers.length; // Fallback to all workers
                         console.log(`[DEBUG] No 64GB+ VRAM workers for 14b_hq model, using all ${workerCount} workers`);
