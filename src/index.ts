@@ -196,11 +196,12 @@ client.on("messageCreate", async (message) => {
         const models = await ai_horde_manager.getModels({force: true}).catch(() => []);
         const workers = await ai_horde_manager.getWorkers().catch(() => []);
         
-        // Simple worker filtering based on model requirements
-        // This prevents workers from picking up models they can't handle efficiently
+        // Filter workers by VRAM requirements for different quality levels
+        // Best (14B HQ) requires 64GB+ VRAM, Standard (14B) requires 32GB+, Better (5B) requires 16GB+
         
         console.log(`[DEBUG] Total workers: ${workers.length}`);
         console.log(`[DEBUG] Worker bridge_agents:`, workers.map(w => w.bridge_agent).slice(0, 5));
+        console.log(`[DEBUG] Worker VRAM info:`, workers.map(w => ({ id: w.id, vram: w.max_vram })).slice(0, 5));
         
         const modelWorkerMap: Record<string, number> = {};
         models.forEach(model => {
@@ -210,11 +211,37 @@ client.on("messageCreate", async (message) => {
                 
                 console.log(`[DEBUG] Model ${model.name}: ${modelWorkers.length} workers support this model`);
                 
-                // Use all workers that support the model - no GPU filtering for now
-                const workerCount = modelWorkers.length;
+                // Filter workers by VRAM requirements
+                let workerCount = 0;
+                if (model.name.includes('5b')) {
+                    // Better - requires 16GB+ VRAM
+                    workerCount = modelWorkers.filter(w => (w.max_vram || 0) >= 16).length;
+                    if (workerCount === 0) {
+                        workerCount = modelWorkers.length; // Fallback to all workers
+                        console.log(`[DEBUG] No 16GB+ VRAM workers for 5b model, using all ${workerCount} workers`);
+                    }
+                } else if (model.name.includes('14b') && !model.name.includes('hq')) {
+                    // Standard - requires 32GB+ VRAM
+                    workerCount = modelWorkers.filter(w => (w.max_vram || 0) >= 32).length;
+                    if (workerCount === 0) {
+                        workerCount = modelWorkers.length; // Fallback to all workers
+                        console.log(`[DEBUG] No 32GB+ VRAM workers for 14b model, using all ${workerCount} workers`);
+                    }
+                } else if (model.name.includes('14b_hq') || model.name.includes('hq')) {
+                    // Best - requires 64GB+ VRAM
+                    workerCount = modelWorkers.filter(w => (w.max_vram || 0) >= 64).length;
+                    if (workerCount === 0) {
+                        workerCount = modelWorkers.length; // Fallback to all workers
+                        console.log(`[DEBUG] No 64GB+ VRAM workers for 14b_hq model, using all ${workerCount} workers`);
+                    }
+                } else {
+                    // Fallback to all workers
+                    workerCount = modelWorkers.length;
+                }
+                
                 modelWorkerMap[model.name] = workerCount;
                 
-                console.log(`[DEBUG] Model ${model.name}: ${workerCount} workers available`);
+                console.log(`[DEBUG] Model ${model.name}: ${modelWorkers.length} total workers, ${workerCount} VRAM-filtered workers`);
             }
         });
         
