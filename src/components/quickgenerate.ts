@@ -123,7 +123,7 @@ export default class extends Component {
                 hires_fix: style.hires_fix,
                 // Add video parameters for video channels
                 ...(isVideoChannel && {
-                    video_length: (style as any).length || (style as any).video_length || 81,
+                    length: (style as any).length || (style as any).video_length || 81,
                     fps: (style as any).fps || 16
                 })
             };
@@ -175,7 +175,7 @@ export default class extends Component {
                 console.log(`[DEBUG] Video generation request - Model: ${style.model}, Params:`, {
                     width: generationParams.width,
                     height: generationParams.height,
-                    video_length: (generationParams as any).video_length,
+                    length: (generationParams as any).length,
                     fps: (generationParams as any).fps,
                     steps: generationParams.steps,
                     cfg_scale: generationParams.cfg_scale
