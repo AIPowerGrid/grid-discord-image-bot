@@ -196,7 +196,15 @@ client.on("messageCreate", async (message) => {
         const models = await ai_horde_manager.getModels({force: true}).catch(() => []);
         const workers = await ai_horde_manager.getWorkers().catch(() => []);
         
+        // Filter workers by GPU series for different quality levels
+        const gpuFilteredWorkers = {
+            low: workers.filter(w => w.bridge_agent?.includes('RTX 3') || w.bridge_agent?.includes('RTX 4') || w.bridge_agent?.includes('RTX 5') || w.bridge_agent?.includes('RTX 6') || w.bridge_agent?.includes('GTX 1') || w.bridge_agent?.includes('GTX 2') || w.bridge_agent?.includes('GTX 3') || w.bridge_agent?.includes('GTX 4') || w.bridge_agent?.includes('GTX 5') || w.bridge_agent?.includes('GTX 6')),
+            standard: workers.filter(w => w.bridge_agent?.includes('RTX 5') || w.bridge_agent?.includes('RTX 6') || w.bridge_agent?.includes('GTX 5') || w.bridge_agent?.includes('GTX 6')),
+            high: workers.filter(w => w.bridge_agent?.includes('RTX 6') || w.bridge_agent?.includes('GTX 6'))
+        };
+        
         console.log(`[DEBUG] Total workers: ${workers.length}`);
+        console.log(`[DEBUG] GPU filtered workers - low: ${gpuFilteredWorkers.low.length}, standard: ${gpuFilteredWorkers.standard.length}, high: ${gpuFilteredWorkers.high.length}`);
         console.log(`[DEBUG] Worker bridge_agents:`, workers.map(w => w.bridge_agent).slice(0, 5));
         
         const modelWorkerMap: Record<string, number> = {};
@@ -206,13 +214,38 @@ client.on("messageCreate", async (message) => {
                 const modelWorkers = workers.filter(w => w.models?.includes(model.name!));
                 
                 console.log(`[DEBUG] Model ${model.name}: ${modelWorkers.length} workers support this model`);
-                console.log(`[DEBUG] Model workers bridge_agents:`, modelWorkers.map(w => w.bridge_agent));
                 
-                // Use all workers that support the model - no GPU filtering for now
-                const workerCount = modelWorkers.length;
+                // Count workers by quality level with GPU filtering
+                let workerCount = 0;
+                if (model.name.includes('5b')) {
+                    // Low quality - 3000 series or better, but fallback to all if none found
+                    workerCount = modelWorkers.filter(w => gpuFilteredWorkers.low.includes(w)).length;
+                    if (workerCount === 0) {
+                        workerCount = modelWorkers.length; // Fallback to all workers
+                        console.log(`[DEBUG] No GPU-filtered workers for 5b model, using all ${workerCount} workers`);
+                    }
+                } else if (model.name.includes('14b') && !model.name.includes('hq')) {
+                    // Standard quality - 5000 series or better, but fallback to all if none found
+                    workerCount = modelWorkers.filter(w => gpuFilteredWorkers.standard.includes(w)).length;
+                    if (workerCount === 0) {
+                        workerCount = modelWorkers.length; // Fallback to all workers
+                        console.log(`[DEBUG] No GPU-filtered workers for 14b model, using all ${workerCount} workers`);
+                    }
+                } else if (model.name.includes('14b_hq') || model.name.includes('hq')) {
+                    // High quality - 6000 series or better, but fallback to all if none found
+                    workerCount = modelWorkers.filter(w => gpuFilteredWorkers.high.includes(w)).length;
+                    if (workerCount === 0) {
+                        workerCount = modelWorkers.length; // Fallback to all workers
+                        console.log(`[DEBUG] No GPU-filtered workers for 14b_hq model, using all ${workerCount} workers`);
+                    }
+                } else {
+                    // Fallback to all workers
+                    workerCount = modelWorkers.length;
+                }
+                
                 modelWorkerMap[model.name] = workerCount;
                 
-                console.log(`[DEBUG] Model ${model.name}: ${workerCount} workers available`);
+                console.log(`[DEBUG] Model ${model.name}: ${modelWorkers.length} total workers, ${workerCount} GPU-filtered workers`);
             }
         });
         
