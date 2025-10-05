@@ -167,7 +167,12 @@ export default class extends Component {
                 workers: filteredWorkers || ctx.client.config.generate?.workers,
                 models: style.model ? (style.model === "YOLO" ? [] : [style.model]) : undefined,
                 r2: true,
-                shared: false
+                shared: false,
+                // Add video parameters at top level for API
+                ...(isVideoChannel && {
+                    length: (style as any).length || (style as any).video_length || 81,
+                    fps: (style as any).fps || 16
+                })
             };
             
             // Debug: Log generation parameters for video channels
