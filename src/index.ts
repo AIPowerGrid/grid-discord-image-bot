@@ -278,7 +278,7 @@ client.on("messageCreate", async (message) => {
             return {
                 type: 2,
                 style: 1,
-                custom_id: `quickgenerate_style:${styleName}_${message.content.substring(0, 200)}`,
+                custom_id: `quickgenerate_style:${styleName}_${message.id}`,
                 label: buttonLabel
             };
         });
@@ -300,7 +300,7 @@ client.on("messageCreate", async (message) => {
             components: [{
                 type: 2,
                 style: 1,
-                custom_id: `quickgenerate_${message.content.substring(0, 200)}`,
+                custom_id: `quickgenerate_${message.id}`,
                 label: `Generate this ${contentType}`
             }]
         }];

@@ -17,7 +17,7 @@ export default class extends Component {
         const customId = ctx.interaction.customId;
         console.log(`[DEBUG] Button customId: "${customId}"`);
         
-        // Check if the custom_id includes style information (format: quickgenerate_style:stylename_prompt)
+        // Check if the custom_id includes style information (format: quickgenerate_style:stylename_messageId)
         // Get channel-specific default style or fall back to global default
         const channelCfg = ctx.client.config.channel_overrides?.[ctx.interaction.channelId!];
         const isVideoChannel = channelCfg?.content_type === "video";
@@ -25,12 +25,12 @@ export default class extends Component {
         let prompt = "";
         
         if (customId.includes("style:")) {
-            // Extract style and prompt from custom_id with style information
-            // Format: quickgenerate_style:stylename_prompt
+            // Extract style and messageId from custom_id with style information
+            // Format: quickgenerate_style:stylename_messageId
             const afterPrefix = customId.substring(13); // Remove "quickgenerate_"
             console.log(`[DEBUG] After prefix: "${afterPrefix}"`);
             
-            // Find the first underscore after "style:" to separate style from prompt
+            // Find the first underscore after "style:" to separate style from messageId
             const styleStart = afterPrefix.indexOf("style:");
             const styleEnd = afterPrefix.indexOf("_", styleStart);
             
@@ -43,19 +43,47 @@ export default class extends Component {
                     console.log(`[DEBUG] Extracted style from button: "${style_raw}"`);
                 }
                 
-                prompt = afterPrefix.substring(styleEnd + 1); // Everything after the underscore
+                const messageId = afterPrefix.substring(styleEnd + 1); // Everything after the underscore
+                console.log(`[DEBUG] Message ID from button: "${messageId}"`);
+                
+                // Fetch the original message to get the full prompt
+                try {
+                    const originalMessage = await ctx.interaction.channel?.messages.fetch(messageId);
+                    if (originalMessage) {
+                        prompt = originalMessage.content;
+                        console.log(`[DEBUG] Retrieved full prompt from message: "${prompt.substring(0, 100)}..."`);
+                    } else {
+                        console.log(`[DEBUG] Could not fetch message with ID: ${messageId}`);
+                    }
+                } catch (error) {
+                    console.error(`[ERROR] Failed to fetch original message: ${error}`);
+                }
             } else {
                 console.log(`[DEBUG] Failed to parse style info from: "${afterPrefix}"`);
             }
         } else {
-            // Original format without style
-            prompt = customId.substring(13); // "quickgenerate_".length
+            // Original format without style - extract messageId
+            const messageId = customId.substring(13); // "quickgenerate_".length
+            console.log(`[DEBUG] Message ID from button: "${messageId}"`);
+            
+            // Fetch the original message to get the full prompt
+            try {
+                const originalMessage = await ctx.interaction.channel?.messages.fetch(messageId);
+                if (originalMessage) {
+                    prompt = originalMessage.content;
+                    console.log(`[DEBUG] Retrieved full prompt from message: "${prompt.substring(0, 100)}..."`);
+                } else {
+                    console.log(`[DEBUG] Could not fetch message with ID: ${messageId}`);
+                }
+            } catch (error) {
+                console.error(`[ERROR] Failed to fetch original message: ${error}`);
+            }
         }
         
-        // Clean up the prompt - trim whitespace and remove leading underscores
-        prompt = prompt.trim().replace(/^_+/, '');
+        // Clean up the prompt - trim whitespace
+        prompt = prompt.trim();
         
-        if (!prompt) return ctx.error({ error: "No prompt found in the button." });
+        if (!prompt) return ctx.error({ error: "No prompt found in the original message." });
 
         await ctx.interaction.deferReply();
 
