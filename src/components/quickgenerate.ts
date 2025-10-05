@@ -121,9 +121,8 @@ export default class extends Component {
                 steps: style.steps,
                 tis: style.tis,
                 hires_fix: style.hires_fix,
-                // Add video parameters for video channels
+                // Add video parameters for video channels (except length - set at top level)
                 ...(isVideoChannel && {
-                    length: (style as any).length || (style as any).video_length || 81,
                     fps: (style as any).fps || 16
                 })
             };
@@ -152,7 +151,7 @@ export default class extends Component {
             
             // Debug: Log generation parameters for video channels
             if (isVideoChannel) {
-                console.log(`[DEBUG] FORCE RESTART - Video generation request - Model: ${style.model}, Style length: ${(style as any).length}, Generation data length: ${generation_data.length}, Params:`, {
+                console.log(`[DEBUG] LENGTH FIX - Video generation request - Model: ${style.model}, Style length: ${(style as any).length}, Generation data length: ${generation_data.length}, Params length: ${(generationParams as any).length}, Params:`, {
                     width: generationParams.width,
                     height: generationParams.height,
                     length: (generationParams as any).length,
