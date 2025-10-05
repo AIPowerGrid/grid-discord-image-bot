@@ -205,7 +205,6 @@ client.on("messageCreate", async (message) => {
         
         console.log(`[DEBUG] Total workers: ${workers.length}`);
         console.log(`[DEBUG] GPU filtered workers - low: ${gpuFilteredWorkers.low.length}, standard: ${gpuFilteredWorkers.standard.length}, high: ${gpuFilteredWorkers.high.length}`);
-        console.log(`[DEBUG] Worker bridge_agents:`, workers.map(w => w.bridge_agent).slice(0, 5));
         
         const modelWorkerMap: Record<string, number> = {};
         models.forEach(model => {
@@ -214,7 +213,6 @@ client.on("messageCreate", async (message) => {
                 const modelWorkers = workers.filter(w => w.models?.includes(model.name!));
                 
                 console.log(`[DEBUG] Model ${model.name}: ${modelWorkers.length} workers support this model`);
-                console.log(`[DEBUG] Model workers bridge_agents:`, modelWorkers.map(w => w.bridge_agent));
                 
                 // Count workers by quality level - use less restrictive filtering
                 let workerCount = 0;
