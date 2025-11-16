@@ -48,7 +48,8 @@ function enhanceVideoPrompt(userPrompt: string): string {
     };
     
     // Categorize the prompt
-    let category = 'abstract'; // default
+    type CategoryType = keyof typeof enhancements;
+    let category: CategoryType = 'abstract'; // default
     if (/\b(person|man|woman|girl|boy|human|character|portrait|face)\b/.test(originalPrompt)) {
         category = 'person';
     } else if (/\b(cat|dog|bird|animal|creature|pet|wildlife)\b/.test(originalPrompt)) {
@@ -60,7 +61,8 @@ function enhanceVideoPrompt(userPrompt: string): string {
     }
     
     // Get random enhancement from the appropriate category
-    const templateOptions = enhancements[category];
+    // TypeScript needs explicit type assertion here
+    const templateOptions = enhancements[category] as string[];
     const selectedTemplate = templateOptions[Math.floor(Math.random() * templateOptions.length)];
     
     // Apply the template
@@ -174,8 +176,6 @@ export default class extends Component {
             }
             
             // Enhance prompts for video generation to get better results
-            const channelCfg = ctx.client.config.channel_overrides?.[ctx.interaction.channelId!];
-            const isVideoChannel = channelCfg?.content_type === "video";
             const enhancedPrompt = isVideoChannel ? enhanceVideoPrompt(prompt) : prompt;
             
             // Debug: Log prompt enhancement for video channels

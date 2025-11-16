@@ -284,5 +284,17 @@
         "fps": 16,
         "length": 48,
         "button_label": "Best (experimental)"
+    },
+    "ltxv": {
+        "prompt": "{p}{np}",
+        "model": "ltxv",
+        "steps": 25,
+        "cfg_scale": 2,
+        "sampler_name": "k_euler",
+        "width": 1216,
+        "height": 704,
+        "fps": 30,
+        "video_length": 96,
+        "button_label": "LTX-Video"
     }
 }

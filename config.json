@@ -309,6 +309,13 @@
           ],
           "default_style": "wan2-14b-video",
           "content_type": "video"
+      },
+      "1436168984549392474": {
+        "allowed_styles": [
+              "ltxv"
+          ],
+          "default_style": "ltxv",
+          "content_type": "video"
       }
   }
 }
