@@ -63,7 +63,8 @@ function enhanceVideoPrompt(userPrompt: string): string {
     // Get random enhancement from the appropriate category
     // TypeScript needs explicit type assertion here
     const templateOptions = enhancements[category] as string[];
-    const selectedTemplate = templateOptions[Math.floor(Math.random() * templateOptions.length)];
+    const randomIndex = Math.floor(Math.random() * templateOptions.length);
+    const selectedTemplate = templateOptions[randomIndex] ?? templateOptions[0] ?? `cinematic shot of {prompt}, professional lighting, high quality`;
     
     // Apply the template
     const enhancedPrompt = selectedTemplate.replace('{prompt}', userPrompt);
