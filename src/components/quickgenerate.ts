@@ -137,6 +137,23 @@ export default class extends Component {
                 } catch (error) {
                     console.error(`[ERROR] Failed to fetch original message: ${error}`);
                 }
+                
+                // Fallback: Try to extract prompt from the bot's reply message (the one containing this button)
+                if (!prompt) {
+                    try {
+                        const buttonMessage = ctx.interaction.message;
+                        if (buttonMessage && buttonMessage.content) {
+                            // Extract prompt from message like: "💡 You can use `/generate prompt:cats` to create a image."
+                            const promptMatch = buttonMessage.content.match(/`\/generate prompt:(.+?)`/);
+                            if (promptMatch && promptMatch[1]) {
+                                prompt = promptMatch[1].trim();
+                                console.log(`[DEBUG] Extracted prompt from bot reply: "${prompt.substring(0, 100)}..."`);
+                            }
+                        }
+                    } catch (error) {
+                        console.error(`[ERROR] Failed to extract prompt from bot reply: ${error}`);
+                    }
+                }
             } else {
                 console.log(`[DEBUG] Failed to parse style info from: "${afterPrefix}"`);
             }
@@ -157,12 +174,32 @@ export default class extends Component {
             } catch (error) {
                 console.error(`[ERROR] Failed to fetch original message: ${error}`);
             }
+            
+            // Fallback: Try to extract prompt from the bot's reply message (the one containing this button)
+            if (!prompt) {
+                try {
+                    const buttonMessage = ctx.interaction.message;
+                    if (buttonMessage && buttonMessage.content) {
+                        // Extract prompt from message like: "💡 You can use `/generate prompt:cats` to create a image."
+                        const promptMatch = buttonMessage.content.match(/`\/generate prompt:(.+?)`/);
+                        if (promptMatch && promptMatch[1]) {
+                            prompt = promptMatch[1].trim();
+                            console.log(`[DEBUG] Extracted prompt from bot reply: "${prompt.substring(0, 100)}..."`);
+                        }
+                    }
+                } catch (error) {
+                    console.error(`[ERROR] Failed to extract prompt from bot reply: ${error}`);
+                }
+            }
         }
         
         // Clean up the prompt - trim whitespace
         prompt = prompt.trim();
         
-        if (!prompt) return ctx.error({ error: "No prompt found in the original message." });
+        if (!prompt) {
+            console.error(`[ERROR] No prompt found. CustomId: "${customId}", Message ID: "${customId.substring(13)}"`);
+            return ctx.error({ error: "No prompt found in the original message." });
+        }
 
         await ctx.interaction.deferReply();
 

@@ -338,8 +338,11 @@ client.on("messageCreate", async (message) => {
         }];
     }
 
+    // Escape the prompt for the command suggestion (replace backticks to avoid breaking the message)
+    const escapedPrompt = message.content.replace(/`/g, '\\`');
+    
     await message.reply({
-        content: `💡 You can use \`/generate prompt:${message.content}\` to create a ${contentType}. ${isVideoChannel && channelConfig?.allowed_styles && channelConfig.allowed_styles.length > 1 ? 'Choose your video model:' : `Would you like me to generate a ${contentType} from your message?`}`,
+        content: `💡 You can use \`/generate prompt:${escapedPrompt}\` to create a ${contentType}. ${isVideoChannel && channelConfig?.allowed_styles && channelConfig.allowed_styles.length > 1 ? 'Choose your video model:' : `Would you like me to generate a ${contentType} from your message?`}`,
         components
     });
 });
