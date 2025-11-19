@@ -144,9 +144,12 @@ export default class extends Component {
                         const buttonMessage = ctx.interaction.message;
                         if (buttonMessage && buttonMessage.content) {
                             // Extract prompt from message like: "💡 You can use `/generate prompt:cats` to create a image."
-                            const promptMatch = buttonMessage.content.match(/`\/generate prompt:(.+?)`/);
+                            // Handle both escaped and unescaped backticks
+                            const promptMatch = buttonMessage.content.match(/`\/generate prompt:(.+?)`/) || 
+                                              buttonMessage.content.match(/\\`\/generate prompt:(.+?)\\`/);
                             if (promptMatch && promptMatch[1]) {
-                                prompt = promptMatch[1].trim();
+                                // Unescape backticks if they were escaped
+                                prompt = promptMatch[1].replace(/\\`/g, '`').trim();
                                 console.log(`[DEBUG] Extracted prompt from bot reply: "${prompt.substring(0, 100)}..."`);
                             }
                         }
@@ -181,9 +184,12 @@ export default class extends Component {
                     const buttonMessage = ctx.interaction.message;
                     if (buttonMessage && buttonMessage.content) {
                         // Extract prompt from message like: "💡 You can use `/generate prompt:cats` to create a image."
-                        const promptMatch = buttonMessage.content.match(/`\/generate prompt:(.+?)`/);
+                        // Handle both escaped and unescaped backticks
+                        const promptMatch = buttonMessage.content.match(/`\/generate prompt:(.+?)`/) || 
+                                          buttonMessage.content.match(/\\`\/generate prompt:(.+?)\\`/);
                         if (promptMatch && promptMatch[1]) {
-                            prompt = promptMatch[1].trim();
+                            // Unescape backticks if they were escaped
+                            prompt = promptMatch[1].replace(/\\`/g, '`').trim();
                             console.log(`[DEBUG] Extracted prompt from bot reply: "${prompt.substring(0, 100)}..."`);
                         }
                     }
