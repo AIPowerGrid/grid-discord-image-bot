@@ -111,7 +111,9 @@ export default class extends Component {
                 source_image: img_data.toString("base64"),
                 source_processing: "img2img" as const,
                 r2: true,
-                shared: false
+                shared: false,
+                slow_workers: true,
+                extra_slow_workers: true
             };
             
             // Start the generation

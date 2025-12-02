@@ -267,8 +267,10 @@ export default class extends Command {
             models: !style.model ? undefined : style.model === "YOLO" ? [] : [style.model],
             source_image: img_data ? img_data.toString("base64") : undefined,
             source_processing: img_data ? "img2img" : undefined,
-            r2: true, // Always use R2 for output, input image is handled separately
-            shared: share_result
+            r2: true,
+            shared: share_result,
+            slow_workers: true,
+            extra_slow_workers: true
         }
         
         if(token === "0000000000" && ((generation_data.params?.width ?? 512) > 1024 || (generation_data.params?.height ?? 512) > 1024 || (generation_data.params?.steps ?? 512) > 100)) return ctx.error({error: "You need to be logged in to generate images with a size over 1024*1024 or more than 100 steps"})

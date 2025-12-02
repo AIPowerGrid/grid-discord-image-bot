@@ -72,7 +72,9 @@ export default class extends Modal {
             r2: true,
             shared: generation_options?.share_result,
             source_image: image,
-            source_processing: SourceImageProcessingTypes.img2img
+            source_processing: SourceImageProcessingTypes.img2img,
+            slow_workers: true,
+            extra_slow_workers: true
         }
 
         if(ctx.client.config.advanced?.dev) {

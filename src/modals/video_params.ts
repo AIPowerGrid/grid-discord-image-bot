@@ -75,7 +75,9 @@ export default class extends Modal {
                 workers: ctx.client.config.generate?.workers,
                 models: style.model ? [style.model] : undefined,
                 r2: true,
-                shared: false
+                shared: false,
+                slow_workers: true,
+                extra_slow_workers: true
             };
             
             // Debug logging

@@ -452,8 +452,10 @@ export default class extends Command {
             models: !model ? undefined : model === "YOLO" ? [] : [model],
             source_image: img_data ? img_data.toString("base64") : undefined,
             source_processing: img_data ? "img2img" : undefined,
-            r2: true, // Always use R2 for output, input image is handled separately
-            shared: share_result
+            r2: true,
+            shared: share_result,
+            slow_workers: true,
+            extra_slow_workers: true
         }
         
         if(ctx.client.config.advanced?.dev) {

@@ -102,6 +102,77 @@ const ai_horde_manager = new AIHorde({
 
 client.login(process.env["DISCORD_TOKEN"])
 
+const MEMORY_UNIT_REGEX = /(\d+(\.\d+)?)(?:\s*)(tb|tib|gb|gib|mb|mib)/i;
+const MAX_REASONABLE_MB = 131072; // 128 GB expressed in MB
+
+const convertWithUnit = (value: number, unit: string): number => {
+    if (Number.isNaN(value) || value <= 0) return 0;
+    const normalized = unit.toLowerCase();
+    if (normalized.startsWith("t")) return value * 1024;
+    if (normalized.startsWith("m")) return value / 1024;
+    return value; // Default to GB for g/gi units
+};
+
+const parseVramFromText = (text: unknown): number => {
+    if (typeof text !== "string" || !text.length) return 0;
+    const match = text.match(MEMORY_UNIT_REGEX);
+    if (!match) return 0;
+
+    const value = match[1];
+    const unit = match[3];
+    if (!value || !unit) return 0;
+
+    return convertWithUnit(parseFloat(value), unit);
+};
+
+const parseVramCandidate = (value: unknown): number => {
+    if (value === null || value === undefined) return 0;
+
+    if (typeof value === "number") {
+        if (value > 1000 && value <= MAX_REASONABLE_MB) return value / 1024;
+        return value;
+    }
+
+    if (typeof value === "string") {
+        const fromText = parseVramFromText(value);
+        if (fromText > 0) return fromText;
+
+        const numeric = parseFloat(value);
+        if (Number.isNaN(numeric) || numeric <= 0) return 0;
+        if (numeric > 1000 && numeric <= MAX_REASONABLE_MB) return numeric / 1024;
+        return numeric;
+    }
+
+    return 0;
+};
+
+const getWorkerVRAM = (worker: any): number => {
+    const candidateFields = [
+        worker?.max_vram_gb,
+        worker?.max_vram,
+        worker?.vram,
+        worker?.memory,
+        worker?.info?.max_vram_gb,
+        worker?.info?.max_vram,
+        worker?.info?.vram,
+        worker?.info?.memory
+    ];
+
+    for (const candidate of candidateFields) {
+        const parsed = parseVramCandidate(candidate);
+        if (parsed > 0) return parsed;
+    }
+
+    const infoText = typeof worker?.info === "string" ? worker.info : JSON.stringify(worker?.info ?? "");
+    const infoParsed = parseVramFromText(infoText);
+    if (infoParsed > 0) return infoParsed;
+
+    const agentParsed = parseVramFromText(worker?.bridge_agent);
+    if (agentParsed > 0) return agentParsed;
+
+    return 0;
+};
+
 if(client.config.logs?.enabled) {
     client.initLogDir()
 }
@@ -221,20 +292,6 @@ client.on("messageCreate", async (message) => {
                 
                 // Filter workers by VRAM requirements
                 let workerCount = 0;
-                
-                // Helper function to get VRAM from various possible fields
-                const getWorkerVRAM = (worker: any): number => {
-                    // Try different possible VRAM fields
-                    const vram = worker.max_vram || worker.max_vram_gb || worker.vram || worker.memory;
-                    if (vram) return vram;
-                    
-                    // Try to parse from bridge_agent string (e.g., "RTX 4090 24GB")
-                    const bridgeAgent = worker.bridge_agent || '';
-                    const vramMatch = bridgeAgent.match(/(\d+)GB/);
-                    if (vramMatch) return parseInt(vramMatch[1]);
-                    
-                    return 0;
-                };
                 
                 console.log(`[DEBUG] ${model.name} workers VRAM details:`, modelWorkers.slice(0, 3).map(w => ({
                     id: w.id,
