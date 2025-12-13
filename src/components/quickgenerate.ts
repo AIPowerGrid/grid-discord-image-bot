@@ -418,14 +418,13 @@ ${!start_status?.is_possible ? "**Request can not be fulfilled with current amou
                 if (status?.wait_time === 0 && prev_left !== 0) error_timeout = Date.now();
                 prev_left = status?.wait_time ?? 1;
                 
-                // Use longer timeout for video generations (10 minutes vs 2 minutes)
-                const timeoutMs = isVideoChannel ? 1000*60*10 : 1000*60*2;
-                if (error_timeout < (Date.now()-timeoutMs) || start_status?.faulted) {
+                // Only cancel if generation is faulted, not based on timeout
+                if (start_status?.faulted) {
                     if (!done) {
                         await ctx.ai_horde_manager.deleteImageGenerationRequest(generation_start.id);
                         await ctx.interaction.editReply({
                             components: [],
-                            content: isVideoChannel ? "Video generation cancelled due to timeout (10 minutes)" : "Generation cancelled due to errors",
+                            content: "Generation cancelled due to errors",
                             embeds: []
                         });
                     }
