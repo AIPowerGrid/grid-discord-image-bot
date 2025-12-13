@@ -11,6 +11,10 @@ const {buffer2webpbuffer} = require("webp-converter")
 
 const config = JSON.parse(readFileSync("./config.json").toString()) as Config
 
+// #region agent log
+fetch('http://127.0.0.1:7242/ingest/87eee932-11e1-49df-bc54-f70bc87f6197',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'generate.ts:12',message:'Generate command module loaded',data:{generateEnabled:config.generate?.enabled,configKeys:Object.keys(config)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1'})}).catch(()=>{});
+// #endregion
+
 const command_data = new SlashCommandBuilder()
     .setName("generate")
     .setDMPermission(false)
@@ -47,6 +51,10 @@ const command_data = new SlashCommandBuilder()
         }
     }
 
+// #region agent log
+fetch('http://127.0.0.1:7242/ingest/87eee932-11e1-49df-bc54-f70bc87f6197',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'generate.ts:52',message:'Generate command_data built',data:{commandName:command_data.name,hasOptions:command_data.options?.length > 0,optionCount:command_data.options?.length},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H2'})}).catch(()=>{});
+// #endregion
+
 function generateButtons(id: string) {
     let i = 0
     const getId = () => `followuprate_${i+1}_${id}`
@@ -76,8 +84,17 @@ export default class extends Command {
     }
 
     override async run(ctx: CommandContext): Promise<any> {
+        // #region agent log
+        const runStartTime = Date.now();
+        fetch('http://127.0.0.1:7242/ingest/87eee932-11e1-49df-bc54-f70bc87f6197',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'generate.ts:run:start',message:'Generate run() started',data:{channelId:ctx.interaction.channelId,userId:ctx.interaction.user.id},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H6-timing'})}).catch(()=>{});
+        // #endregion
+        
         if(!ctx.client.config.generate?.enabled) return ctx.error({error: "Generation is disabled."})
 
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/87eee932-11e1-49df-bc54-f70bc87f6197',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'generate.ts:run:beforeDefer',message:'About to call deferReply',data:{elapsedMs:Date.now()-runStartTime},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H6-timing'})}).catch(()=>{});
+        // #endregion
+        
         await ctx.interaction.deferReply({})
         const party = await ctx.client.getParty(ctx.interaction.channelId, ctx.database)
         let prompt = ctx.interaction.options.getString("prompt", true)
