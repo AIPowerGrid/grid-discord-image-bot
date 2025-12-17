@@ -472,12 +472,30 @@ ${!start_status?.is_possible ? "**Request can not be fulfilled with current amou
                 
                 // Build status line based on generation phase
                 let statusLine = '';
+                
+                // Extract step progress from API response (if available)
+                const stepProgress = (status as any).progress;
+                const hasStepProgress = stepProgress && stepProgress.total_steps > 0;
+                
                 if (isVideoChannel) {
                     if (isProcessing) {
                         // Video is actively being generated
                         const spinner = getVideoSpinnerFrame(spinnerFrameIdx);
+                        
+                        // Show step progress if available from API
+                        let progressInfo = '';
+                        if (hasStepProgress) {
+                            const stepPercent = stepProgress.progress_percent ?? 0;
+                            const currentStep = stepProgress.current_step ?? 0;
+                            const totalSteps = stepProgress.total_steps ?? 0;
+                            progressInfo = `\n📊 **Step:** \`${currentStep}/${totalSteps}\` (${stepPercent}%)\n` +
+                                `\`${createProgressBar(currentStep, totalSteps, 15)}\``;
+                        } else {
+                            progressInfo = `\`${createProgressBar(totalProgress, amount, 15)}\``;
+                        }
+                        
                         statusLine = `\n${spinner} **Video rendering in progress...**\n` +
-                            `\`${createProgressBar(totalProgress, amount, 15)}\`\n` +
+                            progressInfo + `\n` +
                             `⏱️ Elapsed: \`${elapsedTime}\`\n`;
                     } else if (isWaiting) {
                         statusLine = `\n⏳ **Waiting for available GPU worker...**\n` +
