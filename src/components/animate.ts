@@ -209,12 +209,13 @@ ${showInitialEta ? `**ETA:** <t:${Math.floor(Date.now()/1000)+(start_status?.wai
                     if (status?.wait_time === 0 && prev_left !== 0) error_timeout = Date.now();
                     prev_left = status?.wait_time ?? 1;
                     
-                    if (error_timeout < (Date.now()-1000*60*5) || start_status?.faulted) {
+                    // Use longer timeout for animations (30 minutes) since video generation takes time
+                    if (error_timeout < (Date.now()-1000*60*30) || start_status?.faulted) {
                         if (!done) {
                             await ctx.ai_horde_manager.deleteImageGenerationRequest(generation_start.id);
                             await ctx.interaction.editReply({
                                 components: [],
-                                content: "Animation cancelled due to errors",
+                                content: "Animation cancelled due to timeout (30 minutes)",
                                 embeds: []
                             }).catch(console.error);
                         }
