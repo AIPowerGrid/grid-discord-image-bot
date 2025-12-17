@@ -4,6 +4,34 @@ import { ComponentContext } from "../classes/componentContext";
 import { GenerationStable } from "../types/generation";
 import Centra from "centra";
 
+// Helper function to create a visual progress bar
+function createProgressBar(current: number, total: number, barLength: number = 10): string {
+    const progress = Math.min(current / Math.max(total, 1), 1);
+    const filledLength = Math.round(barLength * progress);
+    const emptyLength = barLength - filledLength;
+    const filled = '█'.repeat(filledLength);
+    const empty = '░'.repeat(emptyLength);
+    const percentage = Math.round(progress * 100);
+    return `${filled}${empty} ${percentage}%`;
+}
+
+// Helper function to format elapsed time
+function formatElapsedTime(startTimeMs: number): string {
+    const elapsed = Math.floor((Date.now() - startTimeMs) / 1000);
+    const minutes = Math.floor(elapsed / 60);
+    const seconds = elapsed % 60;
+    if (minutes > 0) {
+        return `${minutes}m ${seconds}s`;
+    }
+    return `${seconds}s`;
+}
+
+// Get animated spinner frames for video generation
+function getVideoSpinnerFrame(frameIndex: number): string {
+    const frames = ['🎬', '📽️', '🎥', '🎞️', '📹', '🎦'] as const;
+    return frames[frameIndex % frames.length] ?? '🎬';
+}
+
 // Enhanced prompt system for better video generation results
 function enhanceVideoPrompt(userPrompt: string): string {
     // Don't enhance if the prompt is already elaborate (contains multiple commas or is very long)
@@ -306,6 +334,10 @@ export default class extends Component {
             const start_status = await ctx.ai_horde_manager.getImageGenerationCheck(generation_start.id);
             const start_horde_data = await ctx.ai_horde_manager.getPerformance();
             
+            // Track generation start time for elapsed time display
+            const generationStartTime = Date.now();
+            let spinnerFrameIdx = 0;
+            
             const chickenSequence = ['🥚', '🐣', '🐤', '🐔', '🔥', '🍗', '😋'] as const;
             let currentFrameIdx = -1; // Start before the first frame
 
@@ -375,8 +407,6 @@ ${!start_status?.is_possible ? "**Request can not be fulfilled with current amou
                 components
             });
             
-            let error_timeout = Date.now()*2;
-            let prev_left = 1;
             let done = false;
             
             // Set up interval to update status - use longer interval for video generation
@@ -415,9 +445,6 @@ ${!start_status?.is_possible ? "**Request can not be fulfilled with current amou
                     return;
                 }
                 
-                if (status?.wait_time === 0 && prev_left !== 0) error_timeout = Date.now();
-                prev_left = status?.wait_time ?? 1;
-                
                 // Only cancel if generation is faulted, not based on timeout
                 if (start_status?.faulted) {
                     if (!done) {
@@ -436,9 +463,36 @@ ${!start_status?.is_possible ? "**Request can not be fulfilled with current amou
                 const contentType = isVideoChannel ? "video" : "image";
                 const contentTypePlural = isVideoChannel ? "videos" : "images";
                 
+                // Calculate progress for video generation
+                const isProcessing = (status.processing ?? 0) > 0;
+                const isWaiting = (status.waiting ?? 0) > 0 && !isProcessing;
+                const totalProgress = status.finished ?? 0;
+                const elapsedTime = formatElapsedTime(generationStartTime);
+                spinnerFrameIdx++;
+                
+                // Build status line based on generation phase
+                let statusLine = '';
+                if (isVideoChannel) {
+                    if (isProcessing) {
+                        // Video is actively being generated
+                        const spinner = getVideoSpinnerFrame(spinnerFrameIdx);
+                        statusLine = `\n${spinner} **Video rendering in progress...**\n` +
+                            `\`${createProgressBar(totalProgress, amount, 15)}\`\n` +
+                            `⏱️ Elapsed: \`${elapsedTime}\`\n`;
+                    } else if (isWaiting) {
+                        statusLine = `\n⏳ **Waiting for available GPU worker...**\n` +
+                            `⏱️ Elapsed: \`${elapsedTime}\`\n`;
+                    } else if (totalProgress > 0) {
+                        statusLine = `\n✅ **Video generation complete!**\n` +
+                            `⏱️ Total time: \`${elapsedTime}\`\n`;
+                    }
+                }
+                
                 const updatedEmbed = new EmbedBuilder({
-                    color: Colors.Blue,
-                    title: `${contentType.charAt(0).toUpperCase() + contentType.slice(1)} generation started`,
+                    color: isProcessing ? Colors.Orange : Colors.Blue,
+                    title: isVideoChannel 
+                        ? (isProcessing ? `${getVideoSpinnerFrame(spinnerFrameIdx)} Video generating...` : `Video generation started`)
+                        : `${contentType.charAt(0).toUpperCase() + contentType.slice(1)} generation started`,
                     description: `**Position:** \`${status.queue_position}\`/\`${horde_data.queued_requests}\`
 **Credits Consumed:** \`${status?.kudos}\`
 **Workers:** \`${horde_data.worker_count}\`
@@ -446,8 +500,8 @@ ${!start_status?.is_possible ? "**Request can not be fulfilled with current amou
 \`${status.waiting ?? 0}\`/\`${amount}\` **${contentTypePlural.charAt(0).toUpperCase() + contentTypePlural.slice(1)} waiting**
 \`${status.processing ?? 0}\`/\`${amount}\` **${contentTypePlural.charAt(0).toUpperCase() + contentTypePlural.slice(1)} processing**
 \`${status.finished ?? 0}\`/\`${amount}\` **${contentTypePlural.charAt(0).toUpperCase() + contentTypePlural.slice(1)} finished**
-
-${getNextEmojiInSequence()}
+${statusLine}
+${isVideoChannel ? '' : getNextEmojiInSequence()}
 
 ${!status.is_possible ? "**Request can not be fulfilled with current amount of workers...**\n" : ""}
 **ETA:** <t:${Math.floor(Date.now()/1000)+(status?.wait_time ?? 0)}:R>`
