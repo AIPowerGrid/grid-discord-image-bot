@@ -262,36 +262,29 @@ export default class extends Component {
             // Get the token
             const token = process.env['GLOBAL_GRID_API_KEY'] || ctx.client.config.default_token || "0000000000";
             
-            // Prepare generation parameters with fallbacks for missing style values
-            // Priority: style value -> hardcoded default (varies by content type)
+            // Prepare generation parameters
+            // For VIDEO: Don't send steps/cfg/width/height/fps/length - let workflow be source of truth
+            // For IMAGE: Use style values with fallback defaults
             const denoise = (ctx.client.config.generate?.default?.denoise ?? 50) / 100;
             const amount = 1;
             
-            // Get default values (video channels use different defaults)
-            const defaultWidth = isVideoChannel ? 640 : 512;
-            const defaultHeight = isVideoChannel ? 640 : 512;
-            const defaultSteps = isVideoChannel ? 4 : 30;
-            const defaultCfg = isVideoChannel ? 1 : 7.5;
-            const defaultFps = 16;
-            const defaultLength = 81;
-            
             // Create the generation request
+            // Video channels: only send required params, let comfy-bridge workflow control the rest
             const generationParams = {
                 sampler_name: style.sampler_name as any,
-                height: style.height ?? defaultHeight,
-                width: style.width ?? defaultWidth,
+                // For video, don't override workflow dimensions; for images, use style or defaults
+                height: isVideoChannel ? undefined : (style.height ?? 512),
+                width: isVideoChannel ? undefined : (style.width ?? 512),
                 n: amount,
                 tiling: false,
                 denoising_strength: denoise,
-                cfg_scale: style.cfg_scale ?? defaultCfg,
+                // For video, don't override workflow cfg/steps; for images, use style or defaults
+                cfg_scale: isVideoChannel ? undefined : (style.cfg_scale ?? 7.5),
                 loras: style.loras,
-                steps: style.steps ?? defaultSteps,
+                steps: isVideoChannel ? undefined : (style.steps ?? 30),
                 tis: style.tis,
-                hires_fix: style.hires_fix,
-                // Add video parameters for video channels (except length - set at top level)
-                ...(isVideoChannel && {
-                    fps: (style as any).fps ?? defaultFps
-                })
+                hires_fix: style.hires_fix
+                // Don't send fps for video - let workflow control it
             };
             
             // For now, don't filter workers - let the API handle worker selection
@@ -309,24 +302,19 @@ export default class extends Component {
                 models: style.model ? (style.model === "YOLO" ? [] : [style.model]) : undefined,
                 r2: true,
                 shared: false,
-                // Add video parameters at top level for API
-                // Use style values if provided, otherwise use defaults
-                ...(isVideoChannel && {
-                    length: (style as any).length ?? (style as any).video_length ?? defaultLength,
-                    fps: (style as any).fps ?? defaultFps
+                // For video channels, don't send length/fps - let workflow be source of truth
+                // Only send if explicitly specified in style (which we've removed)
+                ...(isVideoChannel && (style as any).length && {
+                    length: (style as any).length
+                }),
+                ...(isVideoChannel && (style as any).fps && {
+                    fps: (style as any).fps
                 })
             };
             
             // Debug: Log generation parameters for video channels
             if (isVideoChannel) {
-                console.log(`[DEBUG] LENGTH FIX - Video generation request - Model: ${style.model}, Style length: ${(style as any).length}, Generation data length: ${generation_data.length}, Params length: ${(generationParams as any).length}, Params:`, {
-                    width: generationParams.width,
-                    height: generationParams.height,
-                    length: (generationParams as any).length,
-                    fps: (generationParams as any).fps,
-                    steps: generationParams.steps,
-                    cfg_scale: generationParams.cfg_scale
-                });
+                console.log(`[DEBUG] Video generation request - Model: ${style.model} (workflow is source of truth for steps/cfg/resolution/fps/length)`);
                 console.log(`[DEBUG] Full generation_data object:`, JSON.stringify(generation_data, null, 2));
             }
             

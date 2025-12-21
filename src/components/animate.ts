@@ -86,25 +86,19 @@ export default class extends Component {
                           ctx.client.config.default_token || 
                           "0000000000";
             
-            // Video generation defaults (used when style doesn't specify values)
-            const defaultWidth = 640;
-            const defaultHeight = 640;
-            const defaultSteps = 4;
-            const defaultCfg = 1;
-            const defaultFps = 16;
-            const defaultLength = 81;
-            
-            // Create the generation request parameters for video with fallbacks
+            // Create the generation request parameters for video
+            // Don't send steps/cfg/width/height/fps/length - let workflow be source of truth
             const generationParams = {
                 sampler_name: style.sampler_name as any,
-                height: style.height ?? defaultHeight,
-                width: style.width ?? defaultWidth,
+                // Let workflow control these - only send if explicitly in style
+                height: style.height,
+                width: style.width,
                 n: 1,
                 tiling: false,
-                cfg_scale: style.cfg_scale ?? defaultCfg,
-                steps: style.steps ?? defaultSteps,
-                video_length: (style as any).length ?? (style as any).video_length ?? defaultLength,
-                fps: (style as any).fps ?? defaultFps
+                cfg_scale: style.cfg_scale,
+                steps: style.steps,
+                video_length: (style as any).length ?? (style as any).video_length,
+                fps: (style as any).fps
             };
             
             const generation_data: ImageGenerationInput = {

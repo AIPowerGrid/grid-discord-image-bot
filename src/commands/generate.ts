@@ -133,14 +133,10 @@ export default class extends Command {
         // Check if this is a video channel
         const isVideoChannel = channelCfg?.content_type === 'video';
         
-        // Get default values (video channels use different defaults)
-        const defaultWidth = isVideoChannel ? 640 : 512;
-        const defaultHeight = isVideoChannel ? 640 : 512;
-        const defaultSteps = isVideoChannel ? 4 : 30;
-        const defaultCfg = isVideoChannel ? 1 : 7.5;
-        
-        let height = style?.height ?? defaultHeight
-        let width = style?.width ?? defaultWidth
+        // For VIDEO: Don't set dimensions - let workflow be source of truth
+        // For IMAGE: Use style values with fallback defaults
+        let height = isVideoChannel ? undefined : (style?.height ?? 512)
+        let width = isVideoChannel ? undefined : (style?.width ?? 512)
 
         if(ctx.client.config.advanced?.dev) {
             console.log(style)
@@ -234,7 +230,9 @@ export default class extends Command {
         }
 
 
-        // Create initial generation parameters with fallbacks for missing style values
+        // Create initial generation parameters
+        // For VIDEO: Don't send steps/cfg/fps/length - let workflow be source of truth
+        // For IMAGE: Use style values with fallback defaults
         let generationParams = {
             sampler_name: style.sampler_name as typeof ModelGenerationInputStableSamplers[keyof typeof ModelGenerationInputStableSamplers],
             height: height,
@@ -242,16 +240,12 @@ export default class extends Command {
             n: amount,
             tiling,
             denoising_strength: denoise,
-            cfg_scale: style.cfg_scale ?? defaultCfg,
+            cfg_scale: isVideoChannel ? undefined : (style.cfg_scale ?? 7.5),
             loras: style.loras,
-            steps: style.steps ?? defaultSteps,
+            steps: isVideoChannel ? undefined : (style.steps ?? 30),
             tis: style.tis,
-            hires_fix: style.hires_fix,
-            // Add video parameters for video channels
-            ...(isVideoChannel && {
-                fps: (style as any).fps ?? 16,
-                length: (style as any).length ?? (style as any).video_length ?? 81
-            })
+            hires_fix: style.hires_fix
+            // Don't send fps/length for video - let workflow control it
         };
         
         // Apply model reference constraints if a model is specified in the style
