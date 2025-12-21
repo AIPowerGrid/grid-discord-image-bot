@@ -365,7 +365,7 @@ export default class extends Component {
 
 ${initialEmoji}
 
-${!start_status?.is_possible ? "**Request can not be fulfilled with current amount of workers...**\n" : ""}
+${!start_status?.is_possible && (start_status?.processing ?? 0) === 0 ? "**Request can not be fulfilled with current amount of workers...**\n" : ""}
 **ETA:** <t:${Math.floor(Date.now()/1000)+(start_status?.wait_time ?? 0)}:R>`
             });
             
@@ -521,7 +521,7 @@ ${!start_status?.is_possible ? "**Request can not be fulfilled with current amou
 ${statusLine}
 ${isVideoChannel ? '' : getNextEmojiInSequence()}
 
-${!status.is_possible ? "**Request can not be fulfilled with current amount of workers...**\n" : ""}
+${!status.is_possible && (status.processing ?? 0) === 0 ? "**Request can not be fulfilled with current amount of workers...**\n" : ""}
 **ETA:** <t:${Math.floor(Date.now()/1000)+(status?.wait_time ?? 0)}:R>`
                 });
                 
