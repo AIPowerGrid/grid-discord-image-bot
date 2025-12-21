@@ -251,7 +251,7 @@
     },
     "wan2-5b-video": {
         "prompt": "{p}{np}",
-        "model": "wan2_2_ti2v_5b",
+        "model": "wan2.2_ti2v_5B",
         "sampler_name": "k_euler",
         "button_label": "Standard"
     },
