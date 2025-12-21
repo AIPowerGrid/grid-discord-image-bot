@@ -268,7 +268,7 @@ client.on("messageCreate", async (message) => {
         const workers = await ai_horde_manager.getWorkers().catch(() => []);
         
         // Filter workers by VRAM requirements for different quality levels
-        // Best (14B HQ) requires 64GB+ VRAM, Standard (14B) requires 32GB+, Better (5B) requires 16GB+
+        // Best (14B HQ) requires 64GB+ VRAM, Better (14B) requires 32GB+, Standard (5B) requires 16GB+
         
         console.log(`[DEBUG] Total workers: ${workers.length}`);
         console.log(`[DEBUG] Worker bridge_agents:`, workers.map(w => w.bridge_agent).slice(0, 5));
