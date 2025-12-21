@@ -493,6 +493,8 @@ ${!start_status?.is_possible && (start_status?.processing ?? 0) === 0 ? "**Reque
                         const spinner = getVideoSpinnerFrame(spinnerFrameIdx);
                         
                         // Show step progress if available from API
+                        // Note: The AI Horde API typically doesn't receive real-time step progress from workers
+                        // So we show an animated progress indicator instead of 0%
                         let progressInfo = '';
                         if (hasStepProgress) {
                             const stepPercent = stepProgress.progress_percent ?? 0;
@@ -501,12 +503,19 @@ ${!start_status?.is_possible && (start_status?.processing ?? 0) === 0 ? "**Reque
                             progressInfo = `\n📊 **Step:** \`${currentStep}/${totalSteps}\` (${stepPercent}%)\n` +
                                 `\`${createProgressBar(currentStep, totalSteps, 15)}\``;
                         } else {
-                            progressInfo = `\`${createProgressBar(totalProgress, amount, 15)}\``;
+                            // No step progress available - show animated indicator
+                            // Video generation can take 2-10+ minutes depending on resolution
+                            const animatedBars = ['▓░░░░░░░░░', '█▓░░░░░░░░', '██▓░░░░░░░', '███▓░░░░░░', 
+                                                  '████▓░░░░░', '█████▓░░░░', '██████▓░░░', '███████▓░░',
+                                                  '████████▓░', '█████████▓', '██████████'];
+                            const animIdx = spinnerFrameIdx % animatedBars.length;
+                            progressInfo = `\`${animatedBars[animIdx]}\` *Rendering frames...*`;
                         }
                         
                         statusLine = `\n${spinner} **Video rendering in progress...**\n` +
                             progressInfo + `\n` +
-                            `⏱️ Elapsed: \`${elapsedTime}\`\n`;
+                            `⏱️ Elapsed: \`${elapsedTime}\`\n` +
+                            `💡 *Video generation typically takes 2-10 minutes*\n`;
                     } else if (isWaiting) {
                         statusLine = `\n⏳ **Waiting for available GPU worker...**\n` +
                             `⏱️ Elapsed: \`${elapsedTime}\`\n`;
