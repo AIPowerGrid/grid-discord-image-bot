@@ -862,8 +862,10 @@ ${!status.is_possible && (status.processing ?? 0) === 0 && !hasEverProcessed ? "
                     }
                     
                     // If too many consecutive errors, give up
-                    if (consecutiveErrors >= 5) {
-                        console.error('[ERROR] Too many consecutive failures, stopping generation monitoring');
+                    // Video jobs get more tolerance since they run longer
+                    const maxErrors = isVideoChannel ? 20 : 5;
+                    if (consecutiveErrors >= maxErrors) {
+                        console.error(`[ERROR] Too many consecutive failures (${consecutiveErrors}), stopping generation monitoring`);
                         clearInterval(interval);
                         if (!done) {
                             await ctx.interaction.editReply({
