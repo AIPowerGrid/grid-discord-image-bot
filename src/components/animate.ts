@@ -252,8 +252,20 @@ ${showEta ? `**ETA:** <t:${Math.floor(Date.now()/1000)+(status?.wait_time ?? 0)}
                         }).toJSON());
                     }
                     
-                    // If generation is complete
-                    if (status.done || (status.finished && status.finished > 0)) {
+                    // If generation is complete - verify content exists before marking done
+                    let generationComplete = status.done;
+                    if (!generationComplete && status.finished && status.finished > 0) {
+                        // Check that at least one generation has actual content
+                        const testVideos = await ctx.ai_horde_manager.getImageGenerationStatus(generation_start.id);
+                        const hasValidContent = testVideos.generations?.some(g => 
+                            g.img && !g.censored && g.img.length > 100
+                        );
+                        if (hasValidContent) {
+                            generationComplete = true;
+                        }
+                    }
+                    
+                    if (generationComplete) {
                         done = true;
                         clearInterval(interval);
                         

@@ -560,13 +560,20 @@ ${!status.is_possible && (status.processing ?? 0) === 0 && !hasEverProcessed ? "
                 let generationComplete = status.done;
                 
                 // Conservative fallback: Only check if finished > 0 (not just processing === 0)
+                // For video channels, also verify actual content exists (not censored/empty)
                 if (!generationComplete && isVideoChannel && status?.finished && status.finished > 0) {
                     console.log('[DEBUG] Video generation: checking if result is ready (finished > 0)');
                     try {
                         const testImages = await ctx.ai_horde_manager.getImageGenerationStatus(generation_start.id);
-                        if (testImages.generations && testImages.generations.length > 0) {
-                            console.log('[DEBUG] Found video result, proceeding with completion');
+                        // Check that at least one generation has actual content (not censored, has img data)
+                        const hasValidContent = testImages.generations?.some(g => 
+                            g.img && !g.censored && g.img.length > 100
+                        );
+                        if (hasValidContent) {
+                            console.log('[DEBUG] Found valid video result with content, proceeding with completion');
                             generationComplete = true;
+                        } else {
+                            console.log('[DEBUG] Generations exist but no valid content yet (censored or empty), waiting...');
                         }
                     } catch (e: any) {
                         console.log('[DEBUG] Fallback check failed:', e?.message || 'unknown error');

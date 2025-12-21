@@ -525,11 +525,16 @@ ${showEta ? `**ETA:** <t:${Math.floor(Date.now()/1000)+(status?.wait_time ?? 0)}
                     console.log('[DEBUG] Video generation: checking if result is ready (finished > 0)');
                     try {
                         const testImages = await ctx.ai_horde_manager.getImageGenerationStatus(generation_start!.id!);
-                        if (!testImages.generations || testImages.generations.length === 0) {
+                        // Check that at least one generation has actual content (not censored, has img data)
+                        const hasValidContent = testImages.generations?.some(g => 
+                            g.img && !g.censored && g.img.length > 100
+                        );
+                        if (!hasValidContent) {
+                            console.log('[DEBUG] Generations exist but no valid content yet (censored or empty), waiting...');
                             return {status, horde_data}; 
                         }
                         
-                        console.log('[DEBUG] Found video result, proceeding with completion');
+                        console.log('[DEBUG] Found valid video result with content, proceeding with completion');
                         done = true;
                     } catch (e: any) {
                         console.log('[DEBUG] Fallback check failed:', e?.message || 'unknown error');
