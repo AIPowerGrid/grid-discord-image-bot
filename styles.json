@@ -252,49 +252,25 @@
     "wan2-5b-video": {
         "prompt": "{p}{np}",
         "model": "wan2_2_ti2v_5b",
-        "steps": 20,
-        "width": 640,
-        "height": 640,
-        "video_length": 80,
-        "fps": 16,
-        "cfg_scale": 5,
         "sampler_name": "k_euler",
         "button_label": "Standard"
     },
     "wan2-14b-video": {
         "prompt": "{p}{np}",
         "model": "wan2_2_t2v_14b",
-        "steps": 4,
-        "cfg_scale": 1,
         "sampler_name": "k_euler",
-        "width": 640,
-        "height": 640,
-        "fps": 16,
-        "length": 160,
         "button_label": "Better"
     },
     "wan2-14b-video-hq": {
         "prompt": "{p}{np}",
         "model": "wan2_2_t2v_14b_hq",
-        "steps": 4,
-        "cfg_scale": 1,
         "sampler_name": "k_euler",
-        "width": 640,
-        "height": 640,
-        "fps": 16,
-        "length": 48,
         "button_label": "Best (experimental)"
     },
     "ltxv": {
         "prompt": "{p}{np}",
         "model": "ltxv",
-        "steps": 25,
-        "cfg_scale": 2,
         "sampler_name": "k_euler",
-        "width": 1216,
-        "height": 704,
-        "fps": 30,
-        "video_length": 96,
         "button_label": "LTX-Video"
     }
 }

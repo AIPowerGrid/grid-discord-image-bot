@@ -262,26 +262,35 @@ export default class extends Component {
             // Get the token
             const token = process.env['GLOBAL_GRID_API_KEY'] || ctx.client.config.default_token || "0000000000";
             
-            // Prepare generation parameters
+            // Prepare generation parameters with fallbacks for missing style values
+            // Priority: style value -> hardcoded default (varies by content type)
             const denoise = (ctx.client.config.generate?.default?.denoise ?? 50) / 100;
             const amount = 1;
+            
+            // Get default values (video channels use different defaults)
+            const defaultWidth = isVideoChannel ? 640 : 512;
+            const defaultHeight = isVideoChannel ? 640 : 512;
+            const defaultSteps = isVideoChannel ? 4 : 30;
+            const defaultCfg = isVideoChannel ? 1 : 7.5;
+            const defaultFps = 16;
+            const defaultLength = 81;
             
             // Create the generation request
             const generationParams = {
                 sampler_name: style.sampler_name as any,
-                height: style.height,
-                width: style.width,
+                height: style.height ?? defaultHeight,
+                width: style.width ?? defaultWidth,
                 n: amount,
                 tiling: false,
                 denoising_strength: denoise,
-                cfg_scale: style.cfg_scale,
+                cfg_scale: style.cfg_scale ?? defaultCfg,
                 loras: style.loras,
-                steps: style.steps,
+                steps: style.steps ?? defaultSteps,
                 tis: style.tis,
                 hires_fix: style.hires_fix,
                 // Add video parameters for video channels (except length - set at top level)
                 ...(isVideoChannel && {
-                    fps: (style as any).fps || 16
+                    fps: (style as any).fps ?? defaultFps
                 })
             };
             
@@ -301,9 +310,10 @@ export default class extends Component {
                 r2: true,
                 shared: false,
                 // Add video parameters at top level for API
+                // Use style values if provided, otherwise use defaults
                 ...(isVideoChannel && {
-                    length: style.model?.includes('14b_hq') ? 48 : ((style as any).length || (style as any).video_length || 81),
-                    fps: (style as any).fps || 16
+                    length: (style as any).length ?? (style as any).video_length ?? defaultLength,
+                    fps: (style as any).fps ?? defaultFps
                 })
             };
             
