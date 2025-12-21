@@ -413,6 +413,9 @@ ${!start_status?.is_possible && (start_status?.processing ?? 0) === 0 ? "**Reque
             const pollInterval = isVideoChannel ? 20 : (ctx.client.config?.generate?.update_generation_status_interval_seconds || 5);
             let consecutiveErrors = 0;
             
+            // Track if job has ever been processing (prevents flip-flop display for long video jobs)
+            let hasEverProcessed = false;
+            
             const interval = setInterval(async () => {
                 if (done) return;
                 
@@ -464,8 +467,17 @@ ${!start_status?.is_possible && (start_status?.processing ?? 0) === 0 ? "**Reque
                 const contentTypePlural = isVideoChannel ? "videos" : "images";
                 
                 // Calculate progress for video generation
-                const isProcessing = (status.processing ?? 0) > 0;
-                const isWaiting = (status.waiting ?? 0) > 0 && !isProcessing;
+                // Track if job has ever been in processing state
+                if ((status.processing ?? 0) > 0) {
+                    hasEverProcessed = true;
+                }
+                
+                // For video jobs: once processing has started, keep showing as processing
+                // even if API temporarily reports it as waiting (prevents UI flip-flop)
+                const isProcessing = isVideoChannel 
+                    ? hasEverProcessed && (status.finished ?? 0) === 0
+                    : (status.processing ?? 0) > 0;
+                const isWaiting = (status.waiting ?? 0) > 0 && !isProcessing && !hasEverProcessed;
                 const totalProgress = status.finished ?? 0;
                 const elapsedTime = formatElapsedTime(generationStartTime);
                 spinnerFrameIdx++;
@@ -506,6 +518,15 @@ ${!start_status?.is_possible && (start_status?.processing ?? 0) === 0 ? "**Reque
                     }
                 }
                 
+                // For video channels that have started processing, show stable status
+                // instead of flip-flopping between waiting/processing
+                const displayWaiting = isVideoChannel && hasEverProcessed && totalProgress === 0 
+                    ? 0 
+                    : (status.waiting ?? 0);
+                const displayProcessing = isVideoChannel && hasEverProcessed && totalProgress === 0 
+                    ? 1 
+                    : (status.processing ?? 0);
+                
                 const updatedEmbed = new EmbedBuilder({
                     color: isProcessing ? Colors.Orange : Colors.Blue,
                     title: isVideoChannel 
@@ -515,13 +536,13 @@ ${!start_status?.is_possible && (start_status?.processing ?? 0) === 0 ? "**Reque
 **Credits Consumed:** \`${status?.kudos}\`
 **Workers:** \`${horde_data.worker_count}\`
 
-\`${status.waiting ?? 0}\`/\`${amount}\` **${contentTypePlural.charAt(0).toUpperCase() + contentTypePlural.slice(1)} waiting**
-\`${status.processing ?? 0}\`/\`${amount}\` **${contentTypePlural.charAt(0).toUpperCase() + contentTypePlural.slice(1)} processing**
+\`${displayWaiting}\`/\`${amount}\` **${contentTypePlural.charAt(0).toUpperCase() + contentTypePlural.slice(1)} waiting**
+\`${displayProcessing}\`/\`${amount}\` **${contentTypePlural.charAt(0).toUpperCase() + contentTypePlural.slice(1)} processing**
 \`${status.finished ?? 0}\`/\`${amount}\` **${contentTypePlural.charAt(0).toUpperCase() + contentTypePlural.slice(1)} finished**
 ${statusLine}
 ${isVideoChannel ? '' : getNextEmojiInSequence()}
 
-${!status.is_possible && (status.processing ?? 0) === 0 ? "**Request can not be fulfilled with current amount of workers...**\n" : ""}
+${!status.is_possible && (status.processing ?? 0) === 0 && !hasEverProcessed ? "**Request can not be fulfilled with current amount of workers...**\n" : ""}
 **ETA:** <t:${Math.floor(Date.now()/1000)+(status?.wait_time ?? 0)}:R>`
                 });
                 
