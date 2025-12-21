@@ -265,7 +265,7 @@
         "prompt": "{p}{np}",
         "model": "wan2_2_t2v_14b_hq",
         "sampler_name": "k_euler",
-        "button_label": "Best (experimental)"
+        "button_label": "Best"
     },
     "ltxv": {
         "prompt": "{p}{np}",
