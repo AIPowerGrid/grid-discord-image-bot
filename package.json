@@ -6,7 +6,9 @@
   "scripts": {
     "deploy": "node cleanup.js && npm i && npx tsc -p . && node .",
     "update": "node cleanup.js && npm update && npx tsc -p . && node .",
-    "generate-key": "npx tsc -p . && node dist/generate_salt.js"
+    "generate-key": "npx tsc -p . && node dist/generate_salt.js",
+    "test": "npx tsc -p . --noEmit",
+    "smoke": "npx tsc -p . --noEmit"
   },
   "repository": {
     "type": "git",
